@@ -60,8 +60,6 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define ON_TOMO_Pin GPIO_PIN_1
 #define ON_TOMO_GPIO_Port GPIOF
-#define BUCKY_BRAKE_Pin GPIO_PIN_10
-#define BUCKY_BRAKE_GPIO_Port GPIOG
 #define CONFIG_3_Pin GPIO_PIN_0
 #define CONFIG_3_GPIO_Port GPIOA
 #define CONFIG_2_Pin GPIO_PIN_1
@@ -88,6 +86,8 @@ void Error_Handler(void);
 #define GRID_180_DETECT_GPIO_Port GPIOA
 #define PUSHBUTTON_BUCKYBRAKE_Pin GPIO_PIN_15
 #define PUSHBUTTON_BUCKYBRAKE_GPIO_Port GPIOA
+#define BUCKY_BRAKE_Pin GPIO_PIN_3
+#define BUCKY_BRAKE_GPIO_Port GPIOB
 #define RESET_Pin GPIO_PIN_4
 #define RESET_GPIO_Port GPIOB
 #define ENABLE_Pin GPIO_PIN_5

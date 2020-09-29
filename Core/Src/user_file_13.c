@@ -27,7 +27,8 @@
 ********************************************************************************
 */
 
-#define DIR_PIN_LOGIC_LEVEL_INVERTED		0			// инвертирован ли логический уровень направления (зависит от аппаратной конфигурации драйвера)
+#define DIR_PIN_LOGIC_LEVEL_INVERTED		1			// инвертирован ли логический уровень направления (зависит от аппаратной конфигурации драйвера)
+#define ENABLE_PIN_LOGIC_LEVEL_INVERTED		1
 #define LIMIT_SWITCH_LOGIC_LEVEL_INVERTED	1			// если концевик при размокнутом состоянии выдаёт "1", выставляем флаг инверсии
 #define RASTER_SUPPLY_DISTANCE_STEPS		1000		// расстояние от концевика, на которое растр выдвигается для подачи
 #define EXPOSITION_MAX_DISTANCE_STEPS		900			// крайнее положение растра при экспозиции без ТОМО
@@ -38,7 +39,6 @@
 #define BUTTON_BOUNCE_FILTER_COUNTS			5			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
 #define BUTTON_LONG_PRESS_COUNTS			50			// количество тиков, после которого фиксируем долгое нажатие кнопки
 #define BUCKY_READY_DELAY_STEPS				3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
-
 
 /*
  * Определяем выходные пины, исходя из инициализации, созданной конфигуратором пинов
@@ -61,7 +61,7 @@
 #define LASER_CENTERING_OUT_PORT			GPIOB
 #define LASER_CENTERING_OUT_PIN				LASER_CENTERING_Pin
 
-#define BUCKYBRAKE_OUT_PORT					BUCKY_BRAKE_GPIO_Port
+#define BUCKYBRAKE_OUT_PORT					GPIOB
 #define BUCKYBRAKE_OUT_PIN					BUCKY_BRAKE_Pin
 
 #define BUCKY_READY_OUT_PORT				GPIOA
@@ -96,10 +96,22 @@ void device_init(void)
 	output_signals_state_init(LOGIC_LEVEL_LOW);									// выставляем состояние выходных сигналов
 	input_signals_state_update();												// считываем состояние входных сигналов
 	device_modules_init();														// инициализируем аппаратные модули (кнопки, датчики, мотор, интерфейс А1, DIP-переключатели)
-	buttons_state_update();										// обновляем состояние аппаратных модулей
-	set_output_signal_state(MOTOR_ENABLE_OUT_PORT, MOTOR_ENABLE_OUT_PIN, LOGIC_LEVEL_HIGH);			// навсегда выставляем "1" на входе ШД "Enable"
+	buttons_state_update();														// обновляем состояние аппаратных модулей
+	enable_pin_set();															// навсегда выставляем "1" на входе ШД "Enable"
 	error_code = NO_ERROR;														// выставляем отсутствие ошибки
 	signals_check_timer_interrupts_start();										// запускаем таймер считывания состояний сигналов
+}
+
+void enable_pin_set(void)
+{
+	if (ENABLE_PIN_LOGIC_LEVEL_INVERTED)
+	{
+		set_output_signal_state(MOTOR_ENABLE_OUT_PORT, MOTOR_ENABLE_OUT_PIN, LOGIC_LEVEL_LOW);
+	}
+	else
+	{
+		set_output_signal_state(MOTOR_ENABLE_OUT_PORT, MOTOR_ENABLE_OUT_PIN, LOGIC_LEVEL_HIGH);
+	}
 }
 
 /*
@@ -150,11 +162,12 @@ void device_modules_init(void)
 	motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;					// даём двигателю задание занять начальное положение
 	motor.motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;							// выставляем флаг, что мотор находится в движении
 	motor.exposition_movement_direction = EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION;	// задаём начальное направление циклического движения при экспозиции
-	grid_supply_button.button_released_default_signal_level = LOGIC_LEVEL_HIGH;			// выставляем флаг, что при отпущенной кнопке на пине "1"
+	motor.acceleration_mode = ACCELERATION_MODE_00;										// задаём начальный режим ускорения
+	grid_supply_button.button_released_default_signal_level = LOGIC_LEVEL_LOW;			// выставляем флаг, что при отпущенной кнопке на пине "1"
 	grid_supply_button.button_pressing_duration_counter = 0;							// обнуляем счётчик продолжительности нажатия
 	ON_TOMO_IN_flag = ON_TOMO_WAS_NOT_ENABLED;											// выставляем флаг, что сигнала ON_TOMO не было
 	bucky_ready_delay_counter = 0;														// обнуляем счётчик шагов, после которых выставляем BUCKY_READY в "1"
-	pushbutton_buckybrake.button_released_default_signal_level = LOGIC_LEVEL_HIGH;		// выставляем флаг, что при отпущенной кнопке на пине "1"
+	pushbutton_buckybrake.button_released_default_signal_level = LOGIC_LEVEL_LOW;		// выставляем флаг, что при отпущенной кнопке на пине "1"
 	pushbutton_buckybrake.button_pressing_duration_counter = 0;							// обнуляем счётчик продолжительности нажатия
 }
 
@@ -165,8 +178,17 @@ void check_input_signals(void)
 {
 	input_signals_state_update();					// считываем состояние входов, обновляем их состояние в объекте устройства
 	buttons_state_update();							// обновляем состояние аппаратных модулей
+	dip_switch_state_update();
 	device_error_check();							// проверяем текущее состояние устройства на наличие ошибок
 	read_input_signals_and_set_device_state();		// изменяем состояние устройства в зависимости от входных сигналов
+}
+
+void dip_switch_state_update(void)
+{
+	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
+	{
+
+	}
 }
 
 /*
@@ -394,8 +416,8 @@ void device_error_handler(void)
 		/*
 		 * если сигнал ON_TOMO в "0", и сигнал BUCKY_CALL в "0", и мотор завершил движение
 		 */
-		if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
-			(BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
+		if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
+			(BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
 			(motor.motor_movement_status == MOTOR_MOVEMENT_COMPLETED))
 		{
 			error_code = NO_ERROR;		// выставляем флаг отсутствия ошибки
@@ -430,7 +452,7 @@ void read_input_signals_and_set_device_state(void)
 		/*
 		 * если сигнал ON_TOMO не активен и сигнал ON_TOMO был активен ранее
 		 */
-		if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
+		if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
 			(ON_TOMO_IN_flag != ON_TOMO_WAS_NOT_ENABLED))
 		{
 			ON_TOMO_IN_flag = ON_TOMO_WAS_NOT_ENABLED;								// выставляем флаг: сигнал ON_TOMO не был активен
@@ -464,8 +486,8 @@ void read_input_signals_and_set_device_state(void)
 		/*
 		 * иначе если сигнал BUCKY_CALL активен и сигнал ON_TOMO неактивен и сигнал ON_TOMO не был активен
 		 */
-		else if ((BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
-				(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
+		else if ((BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
+				(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
 				(ON_TOMO_IN_flag == ON_TOMO_WAS_NOT_ENABLED) && \
 				(motor.steps_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEPS))
 		{
@@ -476,7 +498,7 @@ void read_input_signals_and_set_device_state(void)
 		/*
 		 * иначе если сигнал ON_TOMO активен и сигнал ON_TOMO не был активен ранее
 		 */
-		else if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
+		else if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
 				(ON_TOMO_IN_flag == ON_TOMO_WAS_NOT_ENABLED))
 		{
 			ON_TOMO_IN_flag = ON_TOMO_WAS_ENABLED;													// выставляем флаг: сигнал ON_TOMO активен
@@ -484,8 +506,8 @@ void read_input_signals_and_set_device_state(void)
 		/*
 		 * иначе если сигнал ON_TOMO активен и сигнал BUCKY_CALL активен и сигнал ON_TOMO был активен ранее
 		 */
-		else if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
-				(BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
+		else if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
+				(BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
 				(ON_TOMO_IN_flag == ON_TOMO_WAS_ENABLED) && \
 				(motor.steps_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEPS))
 		{
@@ -737,7 +759,7 @@ void motor_timer_interrupt_handler(void)
 	}
 	case MOTOR_PURPOSE_EXPOSITION_TOMO_OFF:												// если назначение движения - экспозиция без сигнала ON_TOMO
 	{
-		if (BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH)				// если сигнал BUCKY_CALL в "1"
+		if (BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)				// если сигнал BUCKY_CALL в "1"
 		{
 			cyclic_movement_step();														// делаем шаг
 			bucky_ready_response_set(LOGIC_LEVEL_HIGH);									// запускаем счётчик шагов до выставления сигнала BUCKY_READY
@@ -755,9 +777,9 @@ void motor_timer_interrupt_handler(void)
 		 * если сигнал ON_OMO был включён, и сигнал BUCKY_CALL включён
 		 */
 		if ((ON_TOMO_IN_flag == ON_TOMO_WAS_ENABLED) && \
-			(BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
+			(BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 		{
-			if (ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)				// если сигнал ON_TOMO в "0"
+			if (ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH)				// если сигнал ON_TOMO в "0"
 			{
 				ON_TOMO_IN_flag = ON_TOMO_WAS_ENABLED_AND_DISABLED;						// выставляем флаг, что ON_TOMO был в "1", а затем в "0"
 				bucky_ready_response_set(LOGIC_LEVEL_HIGH);								// запускаем счётчик шагов до выставления сигнала BUCKY_READY
@@ -768,7 +790,7 @@ void motor_timer_interrupt_handler(void)
 		 * если сигнал ON_TOMO был включён и выключен, и сигнал ON_TOMO включён
 		 */
 		if ((ON_TOMO_IN_flag == ON_TOMO_WAS_ENABLED_AND_DISABLED) && \
-			(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
+			(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 		{
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// выключаем сигнал BUCKY_READY
 			motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
@@ -776,9 +798,9 @@ void motor_timer_interrupt_handler(void)
 		/*
 		 * если сигнал BUCKY_CALL выключен, и сигнал ON_TOMO был включён и выключен, и сигнал ON_TOMO сейчас выключен
 		 */
-		if ((BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
+		if ((BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
 			(ON_TOMO_IN_flag == ON_TOMO_WAS_ENABLED_AND_DISABLED) && \
-			(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
+			(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
 		{
 			device_current_state = DEVICE_ERROR;										// переключаем устройство в состояние ошибки
 			error_code = ON_TOMO_BUCKY_CALL_ERROR;										// выставляем ошибку (BUCKY_CALL выключился прежде, чем ON_TOMO включился повторно)

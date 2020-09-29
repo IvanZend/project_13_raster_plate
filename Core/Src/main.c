@@ -306,32 +306,21 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOF_CLK_ENABLE();
-  __HAL_RCC_GPIOG_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(BUCKY_BRAKE_GPIO_Port, BUCKY_BRAKE_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GRID_120_Pin|GRID_180_Pin|BUCKY_READY_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, LASER_CENTERING_Pin|RESET_Pin|ENABLE_Pin|CURRENT_WIND_Pin
-                          |STEP_Pin|DIR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, LASER_CENTERING_Pin|BUCKY_BRAKE_Pin|RESET_Pin|ENABLE_Pin
+                          |CURRENT_WIND_Pin|STEP_Pin|DIR_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : ON_TOMO_Pin */
   GPIO_InitStruct.Pin = ON_TOMO_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(ON_TOMO_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : BUCKY_BRAKE_Pin */
-  GPIO_InitStruct.Pin = BUCKY_BRAKE_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(BUCKY_BRAKE_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : CONFIG_3_Pin CONFIG_2_Pin CONFIG_1_Pin BUCKY_CALL_Pin
                            GRID_BUTTON_Pin GRID_END_POINT_Pin GRID_120_DETECT_Pin GRID_180_DETECT_Pin
@@ -350,10 +339,10 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : LASER_CENTERING_Pin RESET_Pin ENABLE_Pin CURRENT_WIND_Pin
-                           STEP_Pin DIR_Pin */
-  GPIO_InitStruct.Pin = LASER_CENTERING_Pin|RESET_Pin|ENABLE_Pin|CURRENT_WIND_Pin
-                          |STEP_Pin|DIR_Pin;
+  /*Configure GPIO pins : LASER_CENTERING_Pin BUCKY_BRAKE_Pin RESET_Pin ENABLE_Pin
+                           CURRENT_WIND_Pin STEP_Pin DIR_Pin */
+  GPIO_InitStruct.Pin = LASER_CENTERING_Pin|BUCKY_BRAKE_Pin|RESET_Pin|ENABLE_Pin
+                          |CURRENT_WIND_Pin|STEP_Pin|DIR_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
