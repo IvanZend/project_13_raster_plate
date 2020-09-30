@@ -39,6 +39,12 @@
 #define BUTTON_BOUNCE_FILTER_COUNTS			5			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
 #define BUTTON_LONG_PRESS_COUNTS			50			// количество тиков, после которого фиксируем долгое нажатие кнопки
 #define BUCKY_READY_DELAY_STEPS				3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
+#define MOVEMENT_EQUATION_COEFFICIENT		375/100
+#define MIN_STEPS_PER_SEC_ALL_MODES			1600
+#define MAX_STEPS_PER_SEC_MODE_00			7600
+#define MAX_STEPS_PER_SEC_MODE_01			5200
+#define MAX_STEPS_PER_SEC_MODE_10			4000
+#define MAX_STEPS_PER_SEC_MODE_11			4600
 
 /*
  * Определяем выходные пины, исходя из инициализации, созданной конфигуратором пинов
@@ -169,6 +175,8 @@ void device_modules_init(void)
 	bucky_ready_delay_counter = 0;														// обнуляем счётчик шагов, после которых выставляем BUCKY_READY в "1"
 	pushbutton_buckybrake.button_released_default_signal_level = LOGIC_LEVEL_LOW;		// выставляем флаг, что при отпущенной кнопке на пине "1"
 	pushbutton_buckybrake.button_pressing_duration_counter = 0;							// обнуляем счётчик продолжительности нажатия
+	ticks_before_next_step_counter = 0;
+	ticks_since_start_movement_counter = 0;
 }
 
 /*
@@ -187,7 +195,19 @@ void dip_switch_state_update(void)
 {
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
 	{
-
+		motor.acceleration_mode = ACCELERATION_MODE_00;
+	}
+	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
+	{
+		motor.acceleration_mode = ACCELERATION_MODE_01;
+	}
+	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
+	{
+		motor.acceleration_mode = ACCELERATION_MODE_10;
+	}
+	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
+	{
+		motor.acceleration_mode = ACCELERATION_MODE_11;
 	}
 }
 
@@ -286,7 +306,6 @@ void set_output_signal_state(GPIO_TypeDef* GPIO_port_pointer, uint16_t pin_numbe
 		HAL_GPIO_WritePin(GPIO_port_pointer, pin_number, GPIO_PIN_SET);
 	}
 }
-
 
 /*
  * Проверяем состояние кнопки
@@ -663,6 +682,8 @@ void motor_movement_complete(void)
 {
 	motor_timer_interrupts_stop();										// останавливаем прерывания, по которым шагает мотор
 	motor.motor_movement_status = MOTOR_MOVEMENT_COMPLETED;				// выставляем флаг, что движение завершено
+	ticks_before_next_step_counter = 0;
+	ticks_since_start_movement_counter = 0;
 }
 
 /*
@@ -714,10 +735,13 @@ void bucky_ready_response_check(void)
 	}
 }
 
-/*
- * Обработчик прерываний таймера, отвечающего за шаги мотора
- */
-void motor_timer_interrupt_handler(void)
+void calculate_ticks_per_step(void)
+{
+	uint64_t steps_per_sec = ticks_since_start_movement_counter*ticks_since_start_movement_counter + MIN_STEPS_PER_SEC_ALL_MODES;
+	ticks_before_next_step_counter = 0;
+}
+
+void motor_make_one_step(void)
 {
 	bucky_ready_response_check();														// проверяем, надо ли выставить сигнал BUCKY_READY в "1"
 	switch (motor.motor_movement_purpose)												// если назначение движения мотора
@@ -822,6 +846,16 @@ void motor_timer_interrupt_handler(void)
 		break;
 	}
 	}
+	calculate_ticks_per_step();
+}
+
+/*
+ * Обработчик прерываний таймера, отвечающего за шаги мотора
+ */
+void motor_timer_interrupt_handler(void)
+{
+	ticks_since_start_movement_counter++;
+	motor_make_one_step();
 }
 
 /*

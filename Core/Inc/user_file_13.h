@@ -29,9 +29,9 @@
 ********************************************************************************
 */
 
-#define MOTOR_TIMER_POINTER &htim2
-#define SIGNALS_CHECK_TIMER_POINTER &htim3
-#define UART_MESSAGE_SIZE		8
+#define MOTOR_TIMER_POINTER 			&htim2
+#define SIGNALS_CHECK_TIMER_POINTER 	&htim3
+#define UART_MESSAGE_SIZE				8
 
 /*
 ********************************************************************************
@@ -155,10 +155,10 @@ typedef enum
 
 typedef enum
 {
-	ACCELERATION_MODE_00,
-	ACCELERATION_MODE_01,
-	ACCELERATION_MODE_10,
-	ACCELERATION_MODE_11
+	ACCELERATION_MODE_00,				// 7577 шагов/сек
+	ACCELERATION_MODE_01,				// 6839 шагов/сек
+	ACCELERATION_MODE_10,				// 8188 шагов/сек
+	ACCELERATION_MODE_11				// 9924 шагов/сек
 } AccelerationMode_EnumTypeDef;
 
 /*
@@ -256,15 +256,15 @@ ErrorCode_EnumTypeDef error_code;
 Motor_TypeDef motor;
 GridSensor_TypeDef grid_sensor;
 ButtonAttributes_TypeDef grid_supply_button;
-
 InSignalAttributes_TypeDef ON_TOMO_IN_signal;
 InSignalAttributes_TypeDef BUCKY_CALL_IN_signal;
 OnTomoSignalFlag_EnumTypeDef ON_TOMO_IN_flag;
 uint8_t bucky_ready_delay_counter;
-
 ButtonAttributes_TypeDef pushbutton_buckybrake;
 LimitSwitch_TypeDef limit_switch;
 DIPSwitch_TypeDef DIP_switch;
+uint32_t ticks_before_next_step_counter;
+uint32_t ticks_since_start_movement_counter;
 
 /*
 ********************************************************************************
@@ -316,6 +316,8 @@ void dip_switch_value_decode(void);
 void check_limit_switch_and_make_step(void);
 void motor_movement_start(void);
 void motor_movement_complete(void);
+void calculate_ticks_per_step(void);
+void motor_make_one_step(void);
 void motor_make_step_to_direction(MotorMoveDirection_EnumTypeDef move_direction);
 void cyclic_movement_step(void);
 void motor_direction_pin_set(void);
