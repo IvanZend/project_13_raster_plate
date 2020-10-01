@@ -263,8 +263,12 @@ uint8_t bucky_ready_delay_counter;
 ButtonAttributes_TypeDef pushbutton_buckybrake;
 LimitSwitch_TypeDef limit_switch;
 DIPSwitch_TypeDef DIP_switch;
-uint32_t ticks_before_next_step_counter;
-uint32_t ticks_since_start_movement_counter;
+int64_t ticks_before_next_step_counter;
+uint64_t ticks_since_start_movement_counter;
+uint32_t steps_for_acceleration_counter;
+uint32_t steps_since_start_movement_counter;
+uint64_t ticks_for_acceleration_counter;
+uint64_t steps_per_sec;
 
 /*
 ********************************************************************************
@@ -315,8 +319,10 @@ void dip_switch_value_decode(void);
 
 void check_limit_switch_and_make_step(void);
 void motor_movement_start(void);
-void motor_movement_complete(void);
-void calculate_ticks_per_step(void);
+void reset_movement_counters(void);
+uint64_t movement_time_function(uint64_t time_value);
+void calculate_ticks_per_next_step(void);
+void motor_check_conditions_and_step(void);
 void motor_make_one_step(void);
 void motor_make_step_to_direction(MotorMoveDirection_EnumTypeDef move_direction);
 void cyclic_movement_step(void);
