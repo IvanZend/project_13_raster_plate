@@ -27,26 +27,41 @@
 ********************************************************************************
 */
 
-#define DIR_PIN_LOGIC_LEVEL_INVERTED		1			// инвертирован ли логический уровень направления (зависит от аппаратной конфигурации драйвера)
-#define ENABLE_PIN_LOGIC_LEVEL_INVERTED		1
-#define LIMIT_SWITCH_LOGIC_LEVEL_INVERTED	1			// если концевик при размокнутом состоянии выдаёт "1", выставляем флаг инверсии
-#define RASTER_SUPPLY_DISTANCE_STEPS		1000		// расстояние от концевика, на которое растр выдвигается для подачи
-#define EXPOSITION_MAX_DISTANCE_STEPS		900			// крайнее положение растра при экспозиции без ТОМО
-#define STEP_DISTANCE_INIT_VALUE			10			// начальное значение количества шагов до концевика (чтобы растр доехал до концевика и определилось истинное расстояние)
-#define EMERGENCY_STEPS_TO_LIMIT			10000		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
-#define BUTTON_BOUNCE_FILTER_COUNTS			5			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
-#define BUTTON_LONG_PRESS_COUNTS			50			// количество тиков, после которого фиксируем долгое нажатие кнопки
-#define BUCKY_READY_DELAY_STEPS				3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
-#define MOVEMENT_EQUATION_COEFFICIENT		375/100
-#define MIN_STEPS_PER_SEC_ALL_MODES			1600
-#define MAX_STEPS_PER_SEC_MODE_00			7600
-#define MAX_STEPS_PER_SEC_MODE_01			5200
-#define MAX_STEPS_PER_SEC_MODE_10			4000
-#define MAX_STEPS_PER_SEC_MODE_11			4600
-#define MOTOR_TIMER_TICKS_PER_SECOND		1000000
-#define CONSTANT_SPEED_TICKS_PER_STEP		1000
-#define LINEAR_ACCELERATION_COEFFICIENT		15/100
-#define EXPOSITITON_MOVEMENT_STEPS			913
+#define DIR_PIN_LOGIC_LEVEL_INVERTED			1			// инвертирован ли логический уровень направления (зависит от аппаратной конфигурации драйвера)
+#define ENABLE_PIN_LOGIC_LEVEL_INVERTED			1
+#define LIMIT_SWITCH_LOGIC_LEVEL_INVERTED		1			// если концевик при размокнутом состоянии выдаёт "1", выставляем флаг инверсии
+#define RASTER_SUPPLY_DISTANCE_STEP_IMPULSES	1000		// расстояние от концевика, на которое растр выдвигается для подачи
+#define EXPOSITION_MAX_DISTANCE_STEP_IMPULSES	900			// крайнее положение растра при экспозиции без ТОМО
+#define STEP_DISTANCE_INIT_VALUE				10			// начальное значение количества шагов до концевика (чтобы растр доехал до концевика и определилось истинное расстояние)
+#define EMERGENCY_STEP_IMPULSES_TO_LIMIT		10000		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
+#define BUTTON_BOUNCE_FILTER_COUNTS				5			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
+#define BUTTON_LONG_PRESS_COUNTS				50			// количество тиков, после которого фиксируем долгое нажатие кнопки
+#define BUCKY_READY_DELAY_STEP_IMPULSES			3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
+//#define QUADRATIC_ACCELERATION_COEFFICIENT	375/100
+//#define LINEAR_ACCELERATION_COEFFICIENT		15/100
+#define MIN_STEP_IMPULSES_PER_SEC_ALL_MODES		3200
+#define MAX_STEP_IMPULSES_PER_SEC_MODE_00		15200
+#define MAX_STEP_IMPULSES_PER_SEC_MODE_01		10400
+#define MAX_STEP_IMPULSES_PER_SEC_MODE_10		8000
+#define MAX_STEP_IMPULSES_PER_SEC_MODE_11		9200
+#define CONSTANT_SPEED_STEP_IMPULSES_PER_SEC	6400
+#define MOTOR_TIMER_TICKS_PER_SEC				10000
+#define EXPOSITITON_MOVEMENT_STEP_IMPULSES		1826
+#define ACCELERATION_TIME_MS					40
+
+#define MIN_SPEED_MKS_PER_STEP_IMPULSE_MODE_00	319
+#define MIN_SPEED_MKS_PER_STEP_IMPULSE_MODE_01	319
+#define MIN_SPEED_MKS_PER_STEP_IMPULSE_MODE_10	319
+#define MIN_SPEED_MKS_PER_STEP_IMPULSE_MODE_11	319
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_00	107
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_01	126
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_10	94
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_11	63
+#define ACCELERATION_TIME_MS_MODE_00			40
+#define ACCELERATION_TIME_MS_MODE_01			32
+#define ACCELERATION_TIME_MS_MODE_10			42
+#define ACCELERATION_TIME_MS_MODE_11			50
+
 
 /*
  * Определяем выходные пины, исходя из инициализации, созданной конфигуратором пинов
@@ -163,14 +178,14 @@ void pins_init(void)
  */
 void device_modules_init(void)
 {
-	motor.steps_distance_from_limit_switch = STEP_DISTANCE_INIT_VALUE;					// Задаём условное начальное расстояние от концевика, отличное от нуля. Чтобы мотор доехал до концевика и начал отсчёт.
+	motor.step_impulses_distance_from_limit_switch = STEP_DISTANCE_INIT_VALUE;					// Задаём условное начальное расстояние от концевика, отличное от нуля. Чтобы мотор доехал до концевика и начал отсчёт.
 	motor.limit_emergency_counter = 0;													// обнуляем аварийный счётчик шагов
 	motor.motor_move_direction = MOVE_TO_COORD_END;										// задаём направление движения: двигаться ОТ начального положения
 	motor.step_pin_current_phase = STEP_LOW_PHASE;										// задаём фазу сигнала STEP
 	motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;					// даём двигателю задание занять начальное положение
 	motor.motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;							// выставляем флаг, что мотор находится в движении
 	motor.exposition_movement_direction = EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION;	// задаём начальное направление циклического движения при экспозиции
-	motor.acceleration_mode = ACCELERATION_MODE_00;										// задаём начальный режим ускорения
+	max_step_impulses_per_sec = MAX_STEP_IMPULSES_PER_SEC_MODE_00;
 	grid_supply_button.button_released_default_signal_level = LOGIC_LEVEL_LOW;			// выставляем флаг, что при отпущенной кнопке на пине "1"
 	grid_supply_button.button_pressing_duration_counter = 0;							// обнуляем счётчик продолжительности нажатия
 	ON_TOMO_IN_flag = ON_TOMO_WAS_NOT_ENABLED;											// выставляем флаг, что сигнала ON_TOMO не было
@@ -179,10 +194,12 @@ void device_modules_init(void)
 	pushbutton_buckybrake.button_pressing_duration_counter = 0;							// обнуляем счётчик продолжительности нажатия
 	ticks_before_next_step_counter = 0;
 	ticks_since_start_movement_counter = 0;
-	steps_for_acceleration_counter = 0;
-	steps_since_start_movement_counter = 0;
+	step_impulses_for_acceleration_counter = 0;
+	step_impulses_since_start_movement_counter = 0;
 	ticks_for_acceleration_counter = 0;
-	steps_per_sec = 0;
+	step_impulses_per_sec = 0;
+	linear_acceleration_coefficient = 0;
+	quadratic_acceleration_coefficient = 0;
 }
 
 /*
@@ -192,7 +209,6 @@ void check_input_signals(void)
 {
 	input_signals_state_update();					// считываем состояние входов, обновляем их состояние в объекте устройства
 	buttons_state_update();							// обновляем состояние аппаратных модулей
-	dip_switch_state_update();
 	device_error_check();							// проверяем текущее состояние устройства на наличие ошибок
 	read_input_signals_and_set_device_state();		// изменяем состояние устройства в зависимости от входных сигналов
 }
@@ -201,19 +217,19 @@ void dip_switch_state_update(void)
 {
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
 	{
-		motor.acceleration_mode = ACCELERATION_MODE_00;
+		max_step_impulses_per_sec = MAX_STEP_IMPULSES_PER_SEC_MODE_00;
 	}
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 	{
-		motor.acceleration_mode = ACCELERATION_MODE_01;
+		max_step_impulses_per_sec = MAX_STEP_IMPULSES_PER_SEC_MODE_01;
 	}
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
 	{
-		motor.acceleration_mode = ACCELERATION_MODE_10;
+		max_step_impulses_per_sec = MAX_STEP_IMPULSES_PER_SEC_MODE_10;
 	}
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 	{
-		motor.acceleration_mode = ACCELERATION_MODE_11;
+		max_step_impulses_per_sec = MAX_STEP_IMPULSES_PER_SEC_MODE_11;
 	}
 }
 
@@ -383,9 +399,9 @@ void device_error_check(void)
 		error_code = GRID_TYPE_ERROR;									// выставляем флаг ошибки типа растра
 		device_current_state = DEVICE_STANDBY;							// переключаем устройство в режим ожидания
 	}
-	if (motor.limit_emergency_counter >= EMERGENCY_STEPS_TO_LIMIT)		// если прошагали критическое количество шагов в сторону концевика
+	if (motor.limit_emergency_counter >= EMERGENCY_STEP_IMPULSES_TO_LIMIT)		// если прошагали критическое количество шагов в сторону концевика
 	{
-		motor.limit_emergency_counter = EMERGENCY_STEPS_TO_LIMIT;		// удерживаем аварийный счётчик шагов от дальнейшего увеличения
+		motor.limit_emergency_counter = EMERGENCY_STEP_IMPULSES_TO_LIMIT;		// удерживаем аварийный счётчик шагов от дальнейшего увеличения
 		error_code = LIMIT_SWITCH_ERROR;								// выставляем ошибку концевика (решаем, что концевик неисправен)
 		device_current_state = DEVICE_ERROR;							// переключаем устройство в состояние ошибки
 	}
@@ -492,7 +508,7 @@ void read_input_signals_and_set_device_state(void)
 			/*
 			 * если растр был извлечён и кнопка подачи растра нажата долго
 			 */
-			if (motor.steps_distance_from_limit_switch >= RASTER_SUPPLY_DISTANCE_STEPS)
+			if (motor.step_impulses_distance_from_limit_switch >= RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)
 			{
 				motor.motor_movement_purpose = MOTOR_PURPOSE_GRID_INSERTION;						// назначение движения: вставить растр
 				motor_movement_start();																// начинаем движение
@@ -500,7 +516,7 @@ void read_input_signals_and_set_device_state(void)
 			/*
 			 * если растр был вставлен и кнопка подачи растра нажата долго
 			 */
-			if (motor.steps_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEPS)
+			if (motor.step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)
 			{
 				set_output_signal_state(GRID_120_OUT_PORT, GRID_120_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_120
 				set_output_signal_state(GRID_180_OUT_PORT, GRID_180_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_180
@@ -514,7 +530,7 @@ void read_input_signals_and_set_device_state(void)
 		else if ((BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
 				(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
 				(ON_TOMO_IN_flag == ON_TOMO_WAS_NOT_ENABLED) && \
-				(motor.steps_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEPS))
+				(motor.step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES))
 		{
 			device_current_state = DEVICE_SCANING_TOMO_OFF;											// выставляем состояние устройства: экспозиция без ON_TOMO
 			motor.motor_movement_purpose = MOTOR_PURPOSE_EXPOSITION_TOMO_OFF;						// назначение движения: экспозиция без ON_TOMO
@@ -534,7 +550,7 @@ void read_input_signals_and_set_device_state(void)
 		else if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
 				(BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
 				(ON_TOMO_IN_flag == ON_TOMO_WAS_ENABLED) && \
-				(motor.steps_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEPS))
+				(motor.step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES))
 		{
 			device_current_state = DEVICE_SCANING_TOMO_ON;											// выставляем состояние устройства: экспозиция с ON_TOMO
 			motor.motor_movement_purpose = MOTOR_PURPOSE_EXPOSITION_TOMO_ON;						// назначние движения: экспозиция с ON_TOMO
@@ -544,7 +560,7 @@ void read_input_signals_and_set_device_state(void)
 		 * иначе если концевик неактивен и мы не в положении подачи растра
 		 */
 		else if ((!(limit_switch_return_state())) && \
-				(!(motor.steps_distance_from_limit_switch >= RASTER_SUPPLY_DISTANCE_STEPS)))
+				(!(motor.step_impulses_distance_from_limit_switch >= RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)))
 		{
 			device_current_state = DEVICE_RETURN_TO_INITIAL_STATE;									// выставляем состояние устройства: возврат в начальное положение
 			motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;						// назначение движения: возврат в начальное положение
@@ -645,7 +661,6 @@ void read_input_signals_and_set_device_state(void)
 	}
 }
 
-
 /*
 ***************************************
 *   Функции мотора
@@ -673,6 +688,8 @@ void motor_timer_interrupts_stop(void)
  */
 void motor_movement_start(void)
 {
+	dip_switch_state_update();
+	calculate_acceleration_coefficient();
 	if (device_current_state == DEVICE_STANDBY)							// если устройство в режиме ожидания
 	{
 		error_code = STANDBY_MOVEMENT_ERROR;							// выставляем ошибку (нельзя двигаться в режиме ожидания)
@@ -711,9 +728,9 @@ void bucky_ready_response_set(SignalLogicLevel_EnumTypeDef logic_level_to_set)
 	case LOGIC_LEVEL_HIGH:												// если требуемый логический уровень "1"
 	{
 		bucky_ready_delay_counter++;									// инкрементируем счётчик шагов
-		if (bucky_ready_delay_counter >= BUCKY_READY_DELAY_STEPS)		// если досчитали до нужного количества шагов
+		if (bucky_ready_delay_counter >= BUCKY_READY_DELAY_STEP_IMPULSES)		// если досчитали до нужного количества шагов
 		{
-			bucky_ready_delay_counter = BUCKY_READY_DELAY_STEPS;		// удерживаем счётчик от дальнейшего увеличения
+			bucky_ready_delay_counter = BUCKY_READY_DELAY_STEP_IMPULSES;		// удерживаем счётчик от дальнейшего увеличения
 		}
 		break;
 	}
@@ -730,7 +747,7 @@ void bucky_ready_response_set(SignalLogicLevel_EnumTypeDef logic_level_to_set)
  */
 void bucky_ready_response_check(void)
 {
-	if (bucky_ready_delay_counter == BUCKY_READY_DELAY_STEPS)									// если прошли достаточное количество шагов
+	if (bucky_ready_delay_counter == BUCKY_READY_DELAY_STEP_IMPULSES)									// если прошли достаточное количество шагов
 	{
 		set_output_signal_state(BUCKY_READY_OUT_PORT, BUCKY_READY_OUT_PIN, LOGIC_LEVEL_HIGH);	// выставляем сигнал BUCKY_READY в "1"
 	}
@@ -744,55 +761,61 @@ void reset_movement_counters(void)
 {
 	ticks_before_next_step_counter = 0;
 	ticks_since_start_movement_counter = 0;
-	steps_for_acceleration_counter = 0;
-	steps_since_start_movement_counter = 0;
+	step_impulses_for_acceleration_counter = 0;
+	step_impulses_since_start_movement_counter = 0;
 	ticks_for_acceleration_counter = 0;
+}
+
+void calculate_acceleration_coefficient(void)
+{
+	linear_acceleration_coefficient = ((max_step_impulses_per_sec - MIN_STEP_IMPULSES_PER_SEC_ALL_MODES)*1000)/ACCELERATION_TIME_MS;
+	quadratic_acceleration_coefficient = (max_step_impulses_per_sec*1000*1000)/(ACCELERATION_TIME_MS*ACCELERATION_TIME_MS);
 }
 
 uint64_t movement_time_function(uint64_t time_value)
 {
-	uint64_t calculated_steps_per_sec = 0;
-	calculated_steps_per_sec = (((time_value*time_value)*MOVEMENT_EQUATION_COEFFICIENT)/MOTOR_TIMER_TICKS_PER_SECOND) + MIN_STEPS_PER_SEC_ALL_MODES;
-	//calculated_steps_per_sec = time_value * LINEAR_ACCELERATION_COEFFICIENT + MIN_STEPS_PER_SEC_ALL_MODES;
-	return calculated_steps_per_sec;
+	uint64_t calculated_step_impulses_per_sec = 0;
+	//calculated_step_impulses_per_sec = (((time_value*time_value)*quadratic_acceleration_coefficient/(MOTOR_TIMER_TICKS_PER_SEC))/(MOTOR_TIMER_TICKS_PER_SEC)) + MIN_STEP_IMPULSES_PER_SEC_ALL_MODES;
+	calculated_step_impulses_per_sec = (time_value * linear_acceleration_coefficient)/MOTOR_TIMER_TICKS_PER_SEC + MIN_STEP_IMPULSES_PER_SEC_ALL_MODES;
+	return calculated_step_impulses_per_sec;
 }
 
 void calculate_ticks_per_next_step(void)
 {
-	if (motor.motor_movement_status == MOTOR_MOVEMENT_IN_PROGRESS)
+	if ((motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_OFF) || (motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_ON))
 	{
-		if ((motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_OFF) || (motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_ON))
+		if ((EXPOSITITON_MOVEMENT_STEP_IMPULSES - step_impulses_since_start_movement_counter) >= step_impulses_for_acceleration_counter)
 		{
-			//uint64_t steps_per_sec = (((ticks_since_start_movement_counter*ticks_since_start_movement_counter)*MOVEMENT_EQUATION_COEFFICIENT)/MOTOR_TIMER_TICKS_PER_SECOND) + MIN_STEPS_PER_SEC_ALL_MODES;
-			if ((EXPOSITITON_MOVEMENT_STEPS - steps_since_start_movement_counter) >= steps_for_acceleration_counter)
+			step_impulses_per_sec = movement_time_function(ticks_since_start_movement_counter);
+			if (step_impulses_per_sec < max_step_impulses_per_sec)
 			{
-				steps_per_sec = movement_time_function(ticks_since_start_movement_counter);
-				if (steps_per_sec < MAX_STEPS_PER_SEC_MODE_00)
-				{
-					ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SECOND/steps_per_sec;
-					steps_for_acceleration_counter++;
-				}
-				else
-				{
-					ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SECOND/MAX_STEPS_PER_SEC_MODE_00;
-				}
+				ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SEC/step_impulses_per_sec;
+				step_impulses_for_acceleration_counter++;
 			}
 			else
 			{
-				steps_per_sec = movement_time_function(ticks_for_acceleration_counter);
-				ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SECOND/steps_per_sec;
+				ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SEC/max_step_impulses_per_sec;
 			}
 		}
 		else
 		{
-			ticks_before_next_step_counter = CONSTANT_SPEED_TICKS_PER_STEP;
+			step_impulses_per_sec = movement_time_function(ticks_for_acceleration_counter);
+			ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SEC/step_impulses_per_sec;
 		}
-		steps_since_start_movement_counter++;
+
+		//ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SEC/CONSTANT_SPEED_STEP_IMPULSES_PER_SEC;
 	}
+	else
+	{
+		ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SEC/CONSTANT_SPEED_STEP_IMPULSES_PER_SEC;
+	}
+	step_impulses_since_start_movement_counter++;
 }
 
 void motor_check_conditions_and_step(void)
 {
+	//motor_make_step_to_direction(MOVE_TO_COORD_END);
+
 	switch (motor.motor_movement_purpose)												// если назначение движения мотора
 	{
 	case MOTOR_PURPOSE_INSTANT_STOP:													// если назначение движения мотора - мгновенная остановка
@@ -817,7 +840,7 @@ void motor_check_conditions_and_step(void)
 	}
 	case MOTOR_PURPOSE_GRID_EXTRACTION:													// если назначение движения мотора - извлечь растр
 	{
-		if (motor.steps_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEPS)		// если мы не дошли до крайнего положения
+		if (motor.step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)		// если мы не дошли до крайнего положения
 		{
 			motor_make_step_to_direction(MOVE_TO_COORD_END);							// движемся от начальной точки (наружу)
 		}
@@ -846,9 +869,7 @@ void motor_check_conditions_and_step(void)
 	}
 	case MOTOR_PURPOSE_EXPOSITION_TOMO_ON:												// если назначение движения - экспозиция с сигналом ON_TOMO
 	{
-		/*
-		 * если сигнал ON_OMO был включён, и сигнал BUCKY_CALL включён
-		 */
+		// если сигнал ON_OMO был включён, и сигнал BUCKY_CALL включён
 		if ((ON_TOMO_IN_flag == ON_TOMO_WAS_ENABLED) && \
 			(BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 		{
@@ -859,18 +880,15 @@ void motor_check_conditions_and_step(void)
 			}
 			cyclic_movement_step();														// делаем шаг
 		}
-		/*
-		 * если сигнал ON_TOMO был включён и выключен, и сигнал ON_TOMO включён
-		 */
+
+		// если сигнал ON_TOMO был включён и выключен, и сигнал ON_TOMO включён
 		if ((ON_TOMO_IN_flag == ON_TOMO_WAS_ENABLED_AND_DISABLED) && \
 			(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 		{
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// выключаем сигнал BUCKY_READY
 			motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
 		}
-		/*
-		 * если сигнал BUCKY_CALL выключен, и сигнал ON_TOMO был включён и выключен, и сигнал ON_TOMO сейчас выключен
-		 */
+		// если сигнал BUCKY_CALL выключен, и сигнал ON_TOMO был включён и выключен, и сигнал ON_TOMO сейчас выключен
 		if ((BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
 			(ON_TOMO_IN_flag == ON_TOMO_WAS_ENABLED_AND_DISABLED) && \
 			(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
@@ -895,6 +913,7 @@ void motor_check_conditions_and_step(void)
 		break;
 	}
 	}
+
 }
 
 void motor_make_one_step(void)
@@ -904,17 +923,21 @@ void motor_make_one_step(void)
 	calculate_ticks_per_next_step();
 }
 
+uint64_t test_count = 0;
 /*
  * Обработчик прерываний таймера, отвечающего за шаги мотора
  */
 void motor_timer_interrupt_handler(void)
 {
+	/*
 	ticks_since_start_movement_counter++;
 	ticks_before_next_step_counter--;
-	if ((EXPOSITITON_MOVEMENT_STEPS - steps_since_start_movement_counter) >= steps_for_acceleration_counter)
+	if ((EXPOSITITON_MOVEMENT_STEP_IMPULSES - step_impulses_since_start_movement_counter) >= step_impulses_for_acceleration_counter)
 	{
-		if (steps_per_sec < MAX_STEPS_PER_SEC_MODE_00)
-		ticks_for_acceleration_counter++;
+		if (step_impulses_per_sec < MAX_STEP_IMPULSES_PER_SEC_MODE_00)
+		{
+			ticks_for_acceleration_counter++;
+		}
 	}
 	else
 	{
@@ -925,6 +948,14 @@ void motor_timer_interrupt_handler(void)
 	{
 		motor_make_one_step();
 	}
+	*/
+	test_count++;
+	if (test_count > MIN_SPEED_MKS_PER_STEP_IMPULSE_MODE_00)
+	{
+		test_count = 0;
+		HAL_GPIO_TogglePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN);
+	}
+	//HAL_GPIO_TogglePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN);
 }
 
 /*
@@ -932,7 +963,7 @@ void motor_timer_interrupt_handler(void)
  */
 void cyclic_movement_step(void)
 {
-	if (motor.steps_distance_from_limit_switch <= 0)					// если мы в крайней точке точке, ближайшей к начальному положению
+	if (motor.step_impulses_distance_from_limit_switch <= 0)					// если мы в крайней точке точке, ближайшей к начальному положению
 	{
 		motor.exposition_movement_direction = EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION;			// выставляем флаг движения от начального положения
 		motor_make_step_to_direction(MOVE_TO_COORD_END);											// делаем шаг в сторону от начального положения
@@ -941,8 +972,8 @@ void cyclic_movement_step(void)
 	/*
 	 * если мы находимся в промежутке между крайними положениями растра (ближнее и дальнее)
 	 */
-	if ((motor.steps_distance_from_limit_switch > 0) && \
-			(motor.steps_distance_from_limit_switch < EXPOSITITON_MOVEMENT_STEPS))
+	if ((motor.step_impulses_distance_from_limit_switch > 0) && \
+			(motor.step_impulses_distance_from_limit_switch < EXPOSITITON_MOVEMENT_STEP_IMPULSES))
 	{
 		if (motor.exposition_movement_direction == EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION)		// если выставлен флаг движения от начального положения
 		{
@@ -953,7 +984,7 @@ void cyclic_movement_step(void)
 			motor_make_step_to_direction(MOVE_TO_COORD_ORIGIN);										// иначе делаем шаг в сторону начального положения
 		}
 	}
-	if (motor.steps_distance_from_limit_switch >= EXPOSITITON_MOVEMENT_STEPS)						// если мы в крайней точке, дальней от начального положения
+	if (motor.step_impulses_distance_from_limit_switch >= EXPOSITITON_MOVEMENT_STEP_IMPULSES)						// если мы в крайней точке, дальней от начального положения
 	{
 		motor.exposition_movement_direction = ON_TOMO_MOVEMENT_TO_INITIAL_POSITION;					// выставляем флаг движения к начальному положению
 		motor_make_step_to_direction(MOVE_TO_COORD_ORIGIN);											// делаем шаг в сторону начального положения
@@ -964,7 +995,7 @@ void cyclic_movement_step(void)
 /*
  * выставляем пин направления мотора
  */
-void motor_direction_pin_set()
+void motor_direction_pin_set(void)
 {
 	switch (motor.motor_move_direction)																// если направление движения
 	{
@@ -998,23 +1029,23 @@ void motor_direction_pin_set()
 /*
  * проверяем состояние концевика и совершаем шаг
  */
-void check_limit_switch_and_make_step()
+void check_limit_switch_and_make_step(void)
 {
 	/*
 	 * если направление движения к начальному положению, и концевик не активен, и не пройдено аварийное количество шагов к начальному положению
 	 */
 	if ((motor.motor_move_direction == MOVE_TO_COORD_ORIGIN) && \
 		(!(limit_switch_return_state())) && \
-		(motor.limit_emergency_counter < EMERGENCY_STEPS_TO_LIMIT))
+		(motor.limit_emergency_counter < EMERGENCY_STEP_IMPULSES_TO_LIMIT))
 	{
 		step_toggle();																				// совершаем шаг
-		motor.steps_distance_from_limit_switch = motor.steps_distance_from_limit_switch - 1;		// декрементируем счётчик расстояния от начального положения
+		motor.step_impulses_distance_from_limit_switch = motor.step_impulses_distance_from_limit_switch - 1;		// декрементируем счётчик расстояния от начального положения
 		motor.limit_emergency_counter = motor.limit_emergency_counter + 1;							// инкрементируем аварийный счётчик шагов
 	}
 	if (motor.motor_move_direction == MOVE_TO_COORD_END)											// если направлениение движения от начального положения
 	{
 		step_toggle();																				// совершаем шаг
-		motor.steps_distance_from_limit_switch = motor.steps_distance_from_limit_switch + 1;		// инкрементируем счётчик расстояния от начального положения
+		motor.step_impulses_distance_from_limit_switch = motor.step_impulses_distance_from_limit_switch + 1;		// инкрементируем счётчик расстояния от начального положения
 		motor.limit_emergency_counter = 0;															// обнуляем аварийный счётчик шагов
 	}
 }
@@ -1022,7 +1053,7 @@ void check_limit_switch_and_make_step()
 /*
  * совершаем шаг
  */
-void step_toggle()
+void step_toggle(void)
 {
 	switch (motor.step_pin_current_phase)															// если текущее логическое состояние на пине шага
 	{
@@ -1044,7 +1075,7 @@ void step_toggle()
 /*
  * опрашиваем и возрващаем состояние концевика
  */
-_Bool limit_switch_return_state()
+_Bool limit_switch_return_state(void)
 {
 	_Bool current_state;																			// флаг состояния концевика
 	check_input_signal_state(&limit_switch.GRID_END_POINT_IN_signal);								// опрашиваем состояние пина концевика
@@ -1053,7 +1084,7 @@ _Bool limit_switch_return_state()
 		if (limit_switch.GRID_END_POINT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)			// если на пине концевика "0"
 		{
 			current_state = 1;																		// выставляем флаг концевика в "1"
-			motor.steps_distance_from_limit_switch = 0;												// обнуляем счётчик расстояния до концевика
+			motor.step_impulses_distance_from_limit_switch = 0;												// обнуляем счётчик расстояния до концевика
 		}
 		else
 		{
@@ -1069,7 +1100,7 @@ _Bool limit_switch_return_state()
 		else
 		{
 			current_state = 1;																		// иначе выставляем флаг концевика в "1"
-			motor.steps_distance_from_limit_switch = 0;												// обнуляем счётчик расстояния до концевика
+			motor.step_impulses_distance_from_limit_switch = 0;												// обнуляем счётчик расстояния до концевика
 		}
 	}
 	return current_state;																			// возвращаем флаг состояния концевика

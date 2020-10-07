@@ -153,14 +153,6 @@ typedef enum
 
 } BuckyReadyFlag_EnumTypeDef;
 
-typedef enum
-{
-	ACCELERATION_MODE_00,				// 7577 шагов/сек
-	ACCELERATION_MODE_01,				// 6839 шагов/сек
-	ACCELERATION_MODE_10,				// 8188 шагов/сек
-	ACCELERATION_MODE_11				// 9924 шагов/сек
-} AccelerationMode_EnumTypeDef;
-
 /*
 ********************************************************************************
 *								CLASSES AND OBJECTS
@@ -201,14 +193,13 @@ typedef struct
  */
 typedef struct
 {
-	int32_t steps_distance_from_limit_switch;
+	int32_t step_impulses_distance_from_limit_switch;
 	int32_t limit_emergency_counter;
 	MotorMoveDirection_EnumTypeDef motor_move_direction;			// направление движения мотора
 	StepPinPhase_EnumTypeDef step_pin_current_phase;				// текущее логическое состояние пина шага
 	MotorMovementPurpose_EnumTypeDef motor_movement_purpose;
 	MotorMovementStatus_EnumTypeDef motor_movement_status;
 	OnTomoMovementDirectionFlag_EnumTypeDef exposition_movement_direction;
-	AccelerationMode_EnumTypeDef acceleration_mode;
 
 } Motor_TypeDef;
 
@@ -265,10 +256,13 @@ LimitSwitch_TypeDef limit_switch;
 DIPSwitch_TypeDef DIP_switch;
 int64_t ticks_before_next_step_counter;
 uint64_t ticks_since_start_movement_counter;
-uint32_t steps_for_acceleration_counter;
-uint32_t steps_since_start_movement_counter;
+uint32_t step_impulses_for_acceleration_counter;
+uint32_t step_impulses_since_start_movement_counter;
 uint64_t ticks_for_acceleration_counter;
-uint64_t steps_per_sec;
+uint64_t step_impulses_per_sec;
+uint32_t max_step_impulses_per_sec;
+uint32_t linear_acceleration_coefficient;
+uint32_t quadratic_acceleration_coefficient;
 
 /*
 ********************************************************************************
@@ -292,10 +286,11 @@ extern TIM_HandleTypeDef htim3;
 */
 
 void device_init(void);
-void pins_init (void);
-void device_modules_init (void);
+void pins_init(void);
+void device_modules_init(void);
 void check_input_signals(void);
 void dip_switch_state_update(void);
+void calculate_acceleration_coefficient(void);
 void input_signals_state_update(void);
 void output_signals_state_init(SignalLogicLevel_EnumTypeDef signal_level_to_set);
 void signals_check_timer_interrupts_start(void);
@@ -305,7 +300,7 @@ void enable_pin_set(void);
 void check_input_signal_state(InSignalAttributes_TypeDef* signal_to_check);
 void check_button_state(ButtonAttributes_TypeDef* button_to_check);
 void set_output_signal_state(GPIO_TypeDef* GPIO_port_pointer, uint16_t pin_number, SignalLogicLevel_EnumTypeDef requied_logic_level);
-void device_error_check (void);
+void device_error_check(void);
 void device_error_handler(void);
 void read_input_signals_and_set_device_state(void);
 void bucky_ready_response_set(SignalLogicLevel_EnumTypeDef);
