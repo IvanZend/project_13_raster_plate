@@ -37,30 +37,20 @@
 #define BUTTON_BOUNCE_FILTER_COUNTS				5			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
 #define BUTTON_LONG_PRESS_COUNTS				50			// количество тиков, после которого фиксируем долгое нажатие кнопки
 #define BUCKY_READY_DELAY_STEP_IMPULSES			3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
-//#define QUADRATIC_ACCELERATION_COEFFICIENT	375/100
-//#define LINEAR_ACCELERATION_COEFFICIENT		15/100
-#define MIN_STEP_IMPULSES_PER_SEC_ALL_MODES		3200
-#define MAX_STEP_IMPULSES_PER_SEC_MODE_00		15200
-#define MAX_STEP_IMPULSES_PER_SEC_MODE_01		10400
-#define MAX_STEP_IMPULSES_PER_SEC_MODE_10		8000
-#define MAX_STEP_IMPULSES_PER_SEC_MODE_11		9200
-#define CONSTANT_SPEED_STEP_IMPULSES_PER_SEC	6400
-#define MOTOR_TIMER_TICKS_PER_SEC				10000
-#define EXPOSITITON_MOVEMENT_STEP_IMPULSES		1826
-#define ACCELERATION_TIME_MS					40
+#define MOTOR_TIMER_TICKS_PER_SEC				200000
+#define MOTOR_TIMER_TICK_DURATION_MKS			5
+#define EXPOSITITON_DISTANCE_STEP_IMPULSES		1826
 
-#define MIN_SPEED_MKS_PER_STEP_IMPULSE_MODE_00	319
-#define MIN_SPEED_MKS_PER_STEP_IMPULSE_MODE_01	319
-#define MIN_SPEED_MKS_PER_STEP_IMPULSE_MODE_10	319
-#define MIN_SPEED_MKS_PER_STEP_IMPULSE_MODE_11	319
-#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_00	107
-#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_01	126
-#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_10	94
-#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_11	63
-#define ACCELERATION_TIME_MS_MODE_00			40
-#define ACCELERATION_TIME_MS_MODE_01			32
-#define ACCELERATION_TIME_MS_MODE_10			42
-#define ACCELERATION_TIME_MS_MODE_11			50
+#define CONSTANT_SPEED_MKS_PER_STEP					400			//  !!! уточнить экспериментально
+#define MIN_SPEED_MKS_PER_STEP_IMPULSE_ALL_MODES	319
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_00		107
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_01		126
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_10		94
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_11		63
+#define ACCELERATION_TIME_MS_MODE_00				40
+#define ACCELERATION_TIME_MS_MODE_01				32
+#define ACCELERATION_TIME_MS_MODE_10				42
+#define ACCELERATION_TIME_MS_MODE_11				50
 
 
 /*
@@ -178,14 +168,15 @@ void pins_init(void)
  */
 void device_modules_init(void)
 {
-	motor.step_impulses_distance_from_limit_switch = STEP_DISTANCE_INIT_VALUE;					// Задаём условное начальное расстояние от концевика, отличное от нуля. Чтобы мотор доехал до концевика и начал отсчёт.
+	motor.step_impulses_distance_from_limit_switch = STEP_DISTANCE_INIT_VALUE;			// Задаём условное начальное расстояние от концевика, отличное от нуля. Чтобы мотор доехал до концевика и начал отсчёт.
 	motor.limit_emergency_counter = 0;													// обнуляем аварийный счётчик шагов
 	motor.motor_move_direction = MOVE_TO_COORD_END;										// задаём направление движения: двигаться ОТ начального положения
 	motor.step_pin_current_phase = STEP_LOW_PHASE;										// задаём фазу сигнала STEP
 	motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;					// даём двигателю задание занять начальное положение
 	motor.motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;							// выставляем флаг, что мотор находится в движении
 	motor.exposition_movement_direction = EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION;	// задаём начальное направление циклического движения при экспозиции
-	max_step_impulses_per_sec = MAX_STEP_IMPULSES_PER_SEC_MODE_00;
+	max_speed_mks_per_step_impulse = MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_00;
+	acceleration_time_ms = ACCELERATION_TIME_MS_MODE_00;
 	grid_supply_button.button_released_default_signal_level = LOGIC_LEVEL_LOW;			// выставляем флаг, что при отпущенной кнопке на пине "1"
 	grid_supply_button.button_pressing_duration_counter = 0;							// обнуляем счётчик продолжительности нажатия
 	ON_TOMO_IN_flag = ON_TOMO_WAS_NOT_ENABLED;											// выставляем флаг, что сигнала ON_TOMO не было
@@ -197,7 +188,7 @@ void device_modules_init(void)
 	step_impulses_for_acceleration_counter = 0;
 	step_impulses_since_start_movement_counter = 0;
 	ticks_for_acceleration_counter = 0;
-	step_impulses_per_sec = 0;
+	speed_mks_per_step_impulse = 0;
 	linear_acceleration_coefficient = 0;
 	quadratic_acceleration_coefficient = 0;
 }
@@ -217,19 +208,23 @@ void dip_switch_state_update(void)
 {
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
 	{
-		max_step_impulses_per_sec = MAX_STEP_IMPULSES_PER_SEC_MODE_00;
+		max_speed_mks_per_step_impulse = MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_00;
+		acceleration_time_ms = ACCELERATION_TIME_MS_MODE_00;
 	}
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 	{
-		max_step_impulses_per_sec = MAX_STEP_IMPULSES_PER_SEC_MODE_01;
+		max_speed_mks_per_step_impulse = MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_01;
+		acceleration_time_ms = ACCELERATION_TIME_MS_MODE_01;
 	}
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
 	{
-		max_step_impulses_per_sec = MAX_STEP_IMPULSES_PER_SEC_MODE_10;
+		max_speed_mks_per_step_impulse = MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_10;
+		acceleration_time_ms = ACCELERATION_TIME_MS_MODE_10;
 	}
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 	{
-		max_step_impulses_per_sec = MAX_STEP_IMPULSES_PER_SEC_MODE_11;
+		max_speed_mks_per_step_impulse = MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_11;
+		acceleration_time_ms = ACCELERATION_TIME_MS_MODE_11;
 	}
 }
 
@@ -280,6 +275,7 @@ void signals_check_timer_interrupts_start(void)
  */
 void signals_check_timer_interrupt_handler(void)
 {
+	//HAL_GPIO_TogglePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN);
 	check_input_signals();
 }
 
@@ -688,8 +684,11 @@ void motor_timer_interrupts_stop(void)
  */
 void motor_movement_start(void)
 {
-	dip_switch_state_update();
-	calculate_acceleration_coefficient();
+	if ((motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_OFF) || (motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_ON))
+	{
+		dip_switch_state_update();
+		calculate_acceleration_coefficient();
+	}
 	if (device_current_state == DEVICE_STANDBY)							// если устройство в режиме ожидания
 	{
 		error_code = STANDBY_MOVEMENT_ERROR;							// выставляем ошибку (нельзя двигаться в режиме ожидания)
@@ -745,7 +744,7 @@ void bucky_ready_response_set(SignalLogicLevel_EnumTypeDef logic_level_to_set)
 /*
  * Проверяем счётчик шагов до выставления сигнала BUCKY_READY (по таймеру)
  */
-void bucky_ready_response_check(void)
+void bucky_ready_response_delay_check(void)
 {
 	if (bucky_ready_delay_counter == BUCKY_READY_DELAY_STEP_IMPULSES)									// если прошли достаточное количество шагов
 	{
@@ -768,46 +767,48 @@ void reset_movement_counters(void)
 
 void calculate_acceleration_coefficient(void)
 {
-	linear_acceleration_coefficient = ((max_step_impulses_per_sec - MIN_STEP_IMPULSES_PER_SEC_ALL_MODES)*1000)/ACCELERATION_TIME_MS;
-	quadratic_acceleration_coefficient = (max_step_impulses_per_sec*1000*1000)/(ACCELERATION_TIME_MS*ACCELERATION_TIME_MS);
+	linear_acceleration_coefficient = ((max_speed_mks_per_step_impulse - MIN_SPEED_MKS_PER_STEP_IMPULSE_ALL_MODES)*1000)/acceleration_time_ms;
+	quadratic_acceleration_coefficient = ((max_speed_mks_per_step_impulse - MIN_SPEED_MKS_PER_STEP_IMPULSE_ALL_MODES)*1000*1000)/acceleration_time_ms/acceleration_time_ms;
 }
 
-uint64_t movement_time_function(uint64_t time_value)
+int64_t movement_time_function(uint64_t ticks_value)
 {
-	uint64_t calculated_step_impulses_per_sec = 0;
-	//calculated_step_impulses_per_sec = (((time_value*time_value)*quadratic_acceleration_coefficient/(MOTOR_TIMER_TICKS_PER_SEC))/(MOTOR_TIMER_TICKS_PER_SEC)) + MIN_STEP_IMPULSES_PER_SEC_ALL_MODES;
-	calculated_step_impulses_per_sec = (time_value * linear_acceleration_coefficient)/MOTOR_TIMER_TICKS_PER_SEC + MIN_STEP_IMPULSES_PER_SEC_ALL_MODES;
-	return calculated_step_impulses_per_sec;
+	int64_t calculated_speed_mks_per_step_impulse = 0;
+	// calculated_speed_mks_per_step_impulse = ((time_value*time_value*quadratic_acceleration_coefficient)/MOTOR_TIMER_TICKS_PER_SEC/MOTOR_TIMER_TICKS_PER_SEC) + MIN_STEP_IMPULSES_PER_SEC_ALL_MODES;
+	calculated_speed_mks_per_step_impulse = (ticks_value * linear_acceleration_coefficient)/MOTOR_TIMER_TICKS_PER_SEC + MIN_SPEED_MKS_PER_STEP_IMPULSE_ALL_MODES;
+	return calculated_speed_mks_per_step_impulse;
 }
 
 void calculate_ticks_per_next_step(void)
 {
 	if ((motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_OFF) || (motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_ON))
 	{
-		if ((EXPOSITITON_MOVEMENT_STEP_IMPULSES - step_impulses_since_start_movement_counter) >= step_impulses_for_acceleration_counter)
+		// если оставшееся количество шагов больше количества шагов для ускорения/замедления, мы либо ускоряемся, либо движемся с макс. скоростью
+		if ((EXPOSITITON_DISTANCE_STEP_IMPULSES - step_impulses_since_start_movement_counter) > step_impulses_for_acceleration_counter)
 		{
-			step_impulses_per_sec = movement_time_function(ticks_since_start_movement_counter);
-			if (step_impulses_per_sec < max_step_impulses_per_sec)
+			// если мы не достигли максимальной скорости, ускоряемся
+			if (speed_mks_per_step_impulse < max_speed_mks_per_step_impulse)
 			{
-				ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SEC/step_impulses_per_sec;
+				speed_mks_per_step_impulse = movement_time_function(ticks_since_start_movement_counter);
+				ticks_before_next_step_counter = speed_mks_per_step_impulse/MOTOR_TIMER_TICK_DURATION_MKS;
 				step_impulses_for_acceleration_counter++;
 			}
+			// иначе движемся с максимальной скоростью
 			else
 			{
-				ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SEC/max_step_impulses_per_sec;
+				ticks_before_next_step_counter = max_speed_mks_per_step_impulse/MOTOR_TIMER_TICK_DURATION_MKS;
 			}
 		}
+		// иначе замедляемся
 		else
 		{
-			step_impulses_per_sec = movement_time_function(ticks_for_acceleration_counter);
-			ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SEC/step_impulses_per_sec;
+			speed_mks_per_step_impulse = movement_time_function(ticks_for_acceleration_counter);
+			ticks_before_next_step_counter = speed_mks_per_step_impulse/MOTOR_TIMER_TICK_DURATION_MKS;
 		}
-
-		//ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SEC/CONSTANT_SPEED_STEP_IMPULSES_PER_SEC;
 	}
 	else
 	{
-		ticks_before_next_step_counter = MOTOR_TIMER_TICKS_PER_SEC/CONSTANT_SPEED_STEP_IMPULSES_PER_SEC;
+		ticks_before_next_step_counter = CONSTANT_SPEED_MKS_PER_STEP/MOTOR_TIMER_TICK_DURATION_MKS;
 	}
 	step_impulses_since_start_movement_counter++;
 }
@@ -913,28 +914,27 @@ void motor_check_conditions_and_step(void)
 		break;
 	}
 	}
-
 }
 
 void motor_make_one_step(void)
 {
-	bucky_ready_response_check();														// проверяем, надо ли выставить сигнал BUCKY_READY в "1"
+	bucky_ready_response_delay_check();														// проверяем, надо ли выставить сигнал BUCKY_READY в "1"
 	motor_check_conditions_and_step();
+	//HAL_GPIO_TogglePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN);
 	calculate_ticks_per_next_step();
 }
 
-uint64_t test_count = 0;
+uint32_t test_count = 0;
 /*
  * Обработчик прерываний таймера, отвечающего за шаги мотора
  */
 void motor_timer_interrupt_handler(void)
 {
-	/*
 	ticks_since_start_movement_counter++;
 	ticks_before_next_step_counter--;
-	if ((EXPOSITITON_MOVEMENT_STEP_IMPULSES - step_impulses_since_start_movement_counter) >= step_impulses_for_acceleration_counter)
+	if ((EXPOSITITON_DISTANCE_STEP_IMPULSES - step_impulses_since_start_movement_counter) >= step_impulses_for_acceleration_counter)
 	{
-		if (step_impulses_per_sec < MAX_STEP_IMPULSES_PER_SEC_MODE_00)
+		if (speed_mks_per_step_impulse < max_speed_mks_per_step_impulse)
 		{
 			ticks_for_acceleration_counter++;
 		}
@@ -948,14 +948,8 @@ void motor_timer_interrupt_handler(void)
 	{
 		motor_make_one_step();
 	}
-	*/
-	test_count++;
-	if (test_count > MIN_SPEED_MKS_PER_STEP_IMPULSE_MODE_00)
-	{
-		test_count = 0;
-		HAL_GPIO_TogglePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN);
-	}
-	//HAL_GPIO_TogglePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN);
+
+	// HAL_GPIO_TogglePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN);
 }
 
 /*
@@ -973,7 +967,7 @@ void cyclic_movement_step(void)
 	 * если мы находимся в промежутке между крайними положениями растра (ближнее и дальнее)
 	 */
 	if ((motor.step_impulses_distance_from_limit_switch > 0) && \
-			(motor.step_impulses_distance_from_limit_switch < EXPOSITITON_MOVEMENT_STEP_IMPULSES))
+			(motor.step_impulses_distance_from_limit_switch < EXPOSITITON_DISTANCE_STEP_IMPULSES))
 	{
 		if (motor.exposition_movement_direction == EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION)		// если выставлен флаг движения от начального положения
 		{
@@ -984,7 +978,7 @@ void cyclic_movement_step(void)
 			motor_make_step_to_direction(MOVE_TO_COORD_ORIGIN);										// иначе делаем шаг в сторону начального положения
 		}
 	}
-	if (motor.step_impulses_distance_from_limit_switch >= EXPOSITITON_MOVEMENT_STEP_IMPULSES)						// если мы в крайней точке, дальней от начального положения
+	if (motor.step_impulses_distance_from_limit_switch >= EXPOSITITON_DISTANCE_STEP_IMPULSES)						// если мы в крайней точке, дальней от начального положения
 	{
 		motor.exposition_movement_direction = ON_TOMO_MOVEMENT_TO_INITIAL_POSITION;					// выставляем флаг движения к начальному положению
 		motor_make_step_to_direction(MOVE_TO_COORD_ORIGIN);											// делаем шаг в сторону начального положения

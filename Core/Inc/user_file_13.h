@@ -29,8 +29,8 @@
 ********************************************************************************
 */
 
-#define MOTOR_TIMER_POINTER 			&htim2
-#define SIGNALS_CHECK_TIMER_POINTER 	&htim3
+#define SIGNALS_CHECK_TIMER_POINTER 	&htim2
+#define MOTOR_TIMER_POINTER 			&htim3
 #define UART_MESSAGE_SIZE				8
 
 /*
@@ -259,10 +259,11 @@ uint64_t ticks_since_start_movement_counter;
 uint32_t step_impulses_for_acceleration_counter;
 uint32_t step_impulses_since_start_movement_counter;
 uint64_t ticks_for_acceleration_counter;
-uint64_t step_impulses_per_sec;
-uint32_t max_step_impulses_per_sec;
-uint32_t linear_acceleration_coefficient;
-uint32_t quadratic_acceleration_coefficient;
+uint64_t speed_mks_per_step_impulse;
+uint32_t max_speed_mks_per_step_impulse;
+uint32_t acceleration_time_ms;
+int32_t linear_acceleration_coefficient;
+int32_t quadratic_acceleration_coefficient;
 
 /*
 ********************************************************************************
@@ -305,6 +306,7 @@ void device_error_handler(void);
 void read_input_signals_and_set_device_state(void);
 void bucky_ready_response_set(SignalLogicLevel_EnumTypeDef);
 void dip_switch_value_decode(void);
+void bucky_ready_response_delay_check(void);
 
 /*
 ***************************************
@@ -315,7 +317,7 @@ void dip_switch_value_decode(void);
 void check_limit_switch_and_make_step(void);
 void motor_movement_start(void);
 void reset_movement_counters(void);
-uint64_t movement_time_function(uint64_t time_value);
+int64_t movement_time_function(uint64_t ticks_value);
 void calculate_ticks_per_next_step(void);
 void motor_check_conditions_and_step(void);
 void motor_make_one_step(void);

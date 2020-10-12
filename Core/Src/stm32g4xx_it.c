@@ -208,7 +208,7 @@ void TIM2_IRQHandler(void)
   /* USER CODE END TIM2_IRQn 0 */
   HAL_TIM_IRQHandler(&htim2);
   /* USER CODE BEGIN TIM2_IRQn 1 */
-  motor_timer_interrupt_handler();
+  signals_check_timer_interrupt_handler();
   /* USER CODE END TIM2_IRQn 1 */
 }
 
@@ -222,7 +222,7 @@ void TIM3_IRQHandler(void)
   /* USER CODE END TIM3_IRQn 0 */
   HAL_TIM_IRQHandler(&htim3);
   /* USER CODE BEGIN TIM3_IRQn 1 */
-  signals_check_timer_interrupt_handler();
+  motor_timer_interrupt_handler();
   /* USER CODE END TIM3_IRQn 1 */
 }
 
