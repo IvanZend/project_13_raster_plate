@@ -299,7 +299,7 @@ void signals_check_timer_interrupt_handler(void);
 void buttons_state_update(void);
 void enable_pin_set(void);
 void check_input_signal_state(InSignalAttributes_TypeDef* signal_to_check);
-void check_button_state(ButtonAttributes_TypeDef* button_to_check);
+void check_and_update_button_state(ButtonAttributes_TypeDef* button_to_check);
 void set_output_signal_state(GPIO_TypeDef* GPIO_port_pointer, uint16_t pin_number, SignalLogicLevel_EnumTypeDef requied_logic_level);
 void device_error_check(void);
 void device_error_handler(void);

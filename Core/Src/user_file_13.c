@@ -35,7 +35,7 @@
 #define STEP_DISTANCE_INIT_VALUE				10			// начальное значение количества шагов до концевика (чтобы растр доехал до концевика и определилось истинное расстояние)
 #define EMERGENCY_STEP_IMPULSES_TO_LIMIT		10000		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
 #define BUTTON_BOUNCE_FILTER_COUNTS				5			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
-#define BUTTON_LONG_PRESS_COUNTS				50			// количество тиков, после которого фиксируем долгое нажатие кнопки
+#define BUTTON_LONG_PRESS_COUNTS				20			// количество тиков, после которого фиксируем долгое нажатие кнопки
 #define BUCKY_READY_DELAY_STEP_IMPULSES			3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
 #define MOTOR_TIMER_TICKS_PER_SEC				200000
 #define MOTOR_TIMER_TICK_DURATION_MKS			5
@@ -284,8 +284,8 @@ void signals_check_timer_interrupt_handler(void)
  */
 void buttons_state_update(void)
 {
-	check_button_state(&grid_supply_button);
-	check_button_state(&pushbutton_buckybrake);
+	check_and_update_button_state(&grid_supply_button);
+	check_and_update_button_state(&pushbutton_buckybrake);
 }
 
 /*
@@ -328,7 +328,7 @@ void set_output_signal_state(GPIO_TypeDef* GPIO_port_pointer, uint16_t pin_numbe
 /*
  * Проверяем состояние кнопки
  */
-void check_button_state(ButtonAttributes_TypeDef* button_to_check)
+void check_and_update_button_state(ButtonAttributes_TypeDef* button_to_check)
 {
 	if (button_to_check->button_released_default_signal_level == LOGIC_LEVEL_LOW)						// если при отпущенной кнопке логическое состояние пина "0"
 	{

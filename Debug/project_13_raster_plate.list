@@ -39,11 +39,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING
  17 .debug_line   0000b4dd  00000000  00000000  00052548  2**0
                   CONTENTS, READONLY, DEBUGGING
- 18 .debug_str    000c5afa  00000000  00000000  0005da25  2**0
+ 18 .debug_str    000c5b11  00000000  00000000  0005da25  2**0
                   CONTENTS, READONLY, DEBUGGING
- 19 .comment      0000007b  00000000  00000000  0012351f  2**0
+ 19 .comment      0000007b  00000000  00000000  00123536  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  00004318  00000000  00000000  0012359c  2**2
+ 20 .debug_frame  00004318  00000000  00000000  001235b4  2**2
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
@@ -2090,12 +2090,12 @@ void buttons_state_update(void)
 {
  8000e94:	b580      	push	{r7, lr}
  8000e96:	af00      	add	r7, sp, #0
-	check_button_state(&grid_supply_button);
+	check_and_update_button_state(&grid_supply_button);
  8000e98:	4803      	ldr	r0, [pc, #12]	; (8000ea8 <buttons_state_update+0x14>)
- 8000e9a:	f000 f845 	bl	8000f28 <check_button_state>
-	check_button_state(&pushbutton_buckybrake);
+ 8000e9a:	f000 f845 	bl	8000f28 <check_and_update_button_state>
+	check_and_update_button_state(&pushbutton_buckybrake);
  8000e9e:	4803      	ldr	r0, [pc, #12]	; (8000eac <buttons_state_update+0x18>)
- 8000ea0:	f000 f842 	bl	8000f28 <check_button_state>
+ 8000ea0:	f000 f842 	bl	8000f28 <check_and_update_button_state>
 }
  8000ea4:	bf00      	nop
  8000ea6:	bd80      	pop	{r7, pc}
@@ -2200,12 +2200,12 @@ void set_output_signal_state(GPIO_TypeDef* GPIO_port_pointer, uint16_t pin_numbe
  8000f24:	46bd      	mov	sp, r7
  8000f26:	bd80      	pop	{r7, pc}
 
-08000f28 <check_button_state>:
+08000f28 <check_and_update_button_state>:
 
 /*
  * Проверяем состояние кнопки
  */
-void check_button_state(ButtonAttributes_TypeDef* button_to_check)
+void check_and_update_button_state(ButtonAttributes_TypeDef* button_to_check)
 {
  8000f28:	b480      	push	{r7}
  8000f2a:	b083      	sub	sp, #12
@@ -2215,25 +2215,25 @@ void check_button_state(ButtonAttributes_TypeDef* button_to_check)
  8000f30:	687b      	ldr	r3, [r7, #4]
  8000f32:	7b1b      	ldrb	r3, [r3, #12]
  8000f34:	2b00      	cmp	r3, #0
- 8000f36:	d125      	bne.n	8000f84 <check_button_state+0x5c>
+ 8000f36:	d125      	bne.n	8000f84 <check_and_update_button_state+0x5c>
 	{
 		if (button_to_check->button_signal.signal_logic_level == LOGIC_LEVEL_HIGH)						// если текущий уровень сигнала на пине кнопки "1"
  8000f38:	687b      	ldr	r3, [r7, #4]
  8000f3a:	7a1b      	ldrb	r3, [r3, #8]
  8000f3c:	2b01      	cmp	r3, #1
- 8000f3e:	d11a      	bne.n	8000f76 <check_button_state+0x4e>
+ 8000f3e:	d11a      	bne.n	8000f76 <check_and_update_button_state+0x4e>
 		{
 			if (button_to_check->button_current_state != BUTTON_LONG_PRESS)								// если ещё не было зафиксировано долгое нажатие
  8000f40:	687b      	ldr	r3, [r7, #4]
  8000f42:	7b5b      	ldrb	r3, [r3, #13]
  8000f44:	2b02      	cmp	r3, #2
- 8000f46:	d006      	beq.n	8000f56 <check_button_state+0x2e>
+ 8000f46:	d006      	beq.n	8000f56 <check_and_update_button_state+0x2e>
 			{
 				if (button_to_check->button_pressing_duration_counter >= BUTTON_BOUNCE_FILTER_COUNTS)	// если нажатие длится дольше, чем нужно для фильтрации дребезга
  8000f48:	687b      	ldr	r3, [r7, #4]
  8000f4a:	691b      	ldr	r3, [r3, #16]
  8000f4c:	2b04      	cmp	r3, #4
- 8000f4e:	d902      	bls.n	8000f56 <check_button_state+0x2e>
+ 8000f4e:	d902      	bls.n	8000f56 <check_and_update_button_state+0x2e>
 				{
 					button_to_check->button_current_state = BUTTON_SHORT_PRESS;							// выставляем флаг короткого нажатия
  8000f50:	687b      	ldr	r3, [r7, #4]
@@ -2244,12 +2244,12 @@ void check_button_state(ButtonAttributes_TypeDef* button_to_check)
 			if (button_to_check->button_pressing_duration_counter >= BUTTON_LONG_PRESS_COUNTS)			// если счётчик продолжительности нажатия дошёл до значения длительного нажатия
  8000f56:	687b      	ldr	r3, [r7, #4]
  8000f58:	691b      	ldr	r3, [r3, #16]
- 8000f5a:	2b31      	cmp	r3, #49	; 0x31
- 8000f5c:	d905      	bls.n	8000f6a <check_button_state+0x42>
+ 8000f5a:	2b13      	cmp	r3, #19
+ 8000f5c:	d905      	bls.n	8000f6a <check_and_update_button_state+0x42>
 			{
 				button_to_check->button_pressing_duration_counter = BUTTON_LONG_PRESS_COUNTS;			// удерживаем счётчик от дальнейшего увеличения
  8000f5e:	687b      	ldr	r3, [r7, #4]
- 8000f60:	2232      	movs	r2, #50	; 0x32
+ 8000f60:	2214      	movs	r2, #20
  8000f62:	611a      	str	r2, [r3, #16]
 				button_to_check->button_current_state = BUTTON_LONG_PRESS;								// выставляем флаг долгого нажатия
  8000f64:	687b      	ldr	r3, [r7, #4]
@@ -2268,7 +2268,7 @@ void check_button_state(ButtonAttributes_TypeDef* button_to_check)
 		}
 	}
 }
- 8000f74:	e02b      	b.n	8000fce <check_button_state+0xa6>
+ 8000f74:	e02b      	b.n	8000fce <check_and_update_button_state+0xa6>
 			button_to_check->button_pressing_duration_counter = 0;										// обнуляем счётчик продолжительности нажатия
  8000f76:	687b      	ldr	r3, [r7, #4]
  8000f78:	2200      	movs	r2, #0
@@ -2278,12 +2278,12 @@ void check_button_state(ButtonAttributes_TypeDef* button_to_check)
  8000f7e:	2200      	movs	r2, #0
  8000f80:	735a      	strb	r2, [r3, #13]
 }
- 8000f82:	e024      	b.n	8000fce <check_button_state+0xa6>
+ 8000f82:	e024      	b.n	8000fce <check_and_update_button_state+0xa6>
 		if (button_to_check->button_signal.signal_logic_level == LOGIC_LEVEL_HIGH)						// если текущий уровень сигнала на пине кнопки "1"
  8000f84:	687b      	ldr	r3, [r7, #4]
  8000f86:	7a1b      	ldrb	r3, [r3, #8]
  8000f88:	2b01      	cmp	r3, #1
- 8000f8a:	d106      	bne.n	8000f9a <check_button_state+0x72>
+ 8000f8a:	d106      	bne.n	8000f9a <check_and_update_button_state+0x72>
 			button_to_check->button_pressing_duration_counter = 0;										// обнуляем счётчик продолжительности нажатия
  8000f8c:	687b      	ldr	r3, [r7, #4]
  8000f8e:	2200      	movs	r2, #0
@@ -2293,17 +2293,17 @@ void check_button_state(ButtonAttributes_TypeDef* button_to_check)
  8000f94:	2200      	movs	r2, #0
  8000f96:	735a      	strb	r2, [r3, #13]
 }
- 8000f98:	e019      	b.n	8000fce <check_button_state+0xa6>
+ 8000f98:	e019      	b.n	8000fce <check_and_update_button_state+0xa6>
 			if (button_to_check->button_current_state != BUTTON_LONG_PRESS)								// если ещё не было зафиксировано долгое нажатие
  8000f9a:	687b      	ldr	r3, [r7, #4]
  8000f9c:	7b5b      	ldrb	r3, [r3, #13]
  8000f9e:	2b02      	cmp	r3, #2
- 8000fa0:	d006      	beq.n	8000fb0 <check_button_state+0x88>
+ 8000fa0:	d006      	beq.n	8000fb0 <check_and_update_button_state+0x88>
 				if (button_to_check->button_pressing_duration_counter >= BUTTON_BOUNCE_FILTER_COUNTS)	// если нажатие длится дольше, чем нужно для фильтрации дребезга
  8000fa2:	687b      	ldr	r3, [r7, #4]
  8000fa4:	691b      	ldr	r3, [r3, #16]
  8000fa6:	2b04      	cmp	r3, #4
- 8000fa8:	d902      	bls.n	8000fb0 <check_button_state+0x88>
+ 8000fa8:	d902      	bls.n	8000fb0 <check_and_update_button_state+0x88>
 					button_to_check->button_current_state = BUTTON_SHORT_PRESS;							// выставляем флаг короткого нажатия
  8000faa:	687b      	ldr	r3, [r7, #4]
  8000fac:	2201      	movs	r2, #1
@@ -2311,11 +2311,11 @@ void check_button_state(ButtonAttributes_TypeDef* button_to_check)
 			if (button_to_check->button_pressing_duration_counter >= BUTTON_LONG_PRESS_COUNTS)			// если счётчик продолжительности нажатия дошёл до значения длительного нажатия
  8000fb0:	687b      	ldr	r3, [r7, #4]
  8000fb2:	691b      	ldr	r3, [r3, #16]
- 8000fb4:	2b31      	cmp	r3, #49	; 0x31
- 8000fb6:	d905      	bls.n	8000fc4 <check_button_state+0x9c>
+ 8000fb4:	2b13      	cmp	r3, #19
+ 8000fb6:	d905      	bls.n	8000fc4 <check_and_update_button_state+0x9c>
 				button_to_check->button_pressing_duration_counter = BUTTON_LONG_PRESS_COUNTS;			// удерживаем счётчик от дальнейшего увеличения
  8000fb8:	687b      	ldr	r3, [r7, #4]
- 8000fba:	2232      	movs	r2, #50	; 0x32
+ 8000fba:	2214      	movs	r2, #20
  8000fbc:	611a      	str	r2, [r3, #16]
 				button_to_check->button_current_state = BUTTON_LONG_PRESS;								// выставляем флаг долгого нажатия
  8000fbe:	687b      	ldr	r3, [r7, #4]

@@ -28,6 +28,11 @@ endif
 
 -include ../makefile.defs
 
+BUILD_ARTIFACT_NAME := project_13_raster_plate
+BUILD_ARTIFACT_EXTENSION := elf
+BUILD_ARTIFACT_PREFIX := 
+BUILD_ARTIFACT := $(BUILD_ARTIFACT_PREFIX)$(BUILD_ARTIFACT_NAME).$(BUILD_ARTIFACT_EXTENSION)
+
 # Add inputs and outputs from these tool invocations to the build variables 
 EXECUTABLES += \
 project_13_raster_plate.elf \
@@ -43,11 +48,14 @@ project_13_raster_plate.bin \
 
 
 # All Target
-all: project_13_raster_plate.elf secondary-outputs
+all: main-build
+
+# Main-build Target
+main-build: project_13_raster_plate.elf secondary-outputs
 
 # Tool invocations
-project_13_raster_plate.elf: $(OBJS) $(USER_OBJS) C:\Users\xenof\Documents\GitHub\project_13_raster_plate\STM32G431KBTX_FLASH.ld
-	arm-none-eabi-gcc -o "project_13_raster_plate.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\xenof\Documents\GitHub\project_13_raster_plate\STM32G431KBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="project_13_raster_plate.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+project_13_raster_plate.elf: $(OBJS) $(USER_OBJS) C:\Users\IvanB.HEL-KONSTR7\Documents\GitHub\project_13_raster_plate\STM32G431KBTX_FLASH.ld
+	arm-none-eabi-gcc -o "project_13_raster_plate.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\IvanB.HEL-KONSTR7\Documents\GitHub\project_13_raster_plate\STM32G431KBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="project_13_raster_plate.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
@@ -73,7 +81,14 @@ clean:
 
 secondary-outputs: $(SIZE_OUTPUT) $(OBJDUMP_LIST) $(OBJCOPY_BIN)
 
-.PHONY: all clean dependents
+fail-specified-linker-script-missing:
+	@echo 'Error: Cannot find the specified linker script. Check the linker settings in the build configuration.'
+	@exit 2
+
+warn-no-linker-script-specified:
+	@echo 'Warning: No linker script specified. Check the linker settings in the build configuration.'
+
+.PHONY: all clean dependents fail-specified-linker-script-missing warn-no-linker-script-specified
 .SECONDARY:
 
 -include ../makefile.targets
