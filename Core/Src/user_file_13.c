@@ -18,7 +18,7 @@
 ********************************************************************************
 */
 
-#include "user_file_13.h"
+#include "main.h"
 #include "stdio.h"
 
 /*
@@ -27,30 +27,41 @@
 ********************************************************************************
 */
 
-#define DIR_PIN_LOGIC_LEVEL_INVERTED			1			// инвертирован ли логический уровень направления (зависит от аппаратной конфигурации драйвера)
-#define ENABLE_PIN_LOGIC_LEVEL_INVERTED			1
-#define LIMIT_SWITCH_LOGIC_LEVEL_INVERTED		1			// если концевик при размокнутом состоянии выдаёт "1", выставляем флаг инверсии
-#define RASTER_SUPPLY_DISTANCE_STEP_IMPULSES	1000		// расстояние от концевика, на которое растр выдвигается для подачи
-#define EXPOSITION_MAX_DISTANCE_STEP_IMPULSES	900			// крайнее положение растра при экспозиции без ТОМО
-#define STEP_DISTANCE_INIT_VALUE				10			// начальное значение количества шагов до концевика (чтобы растр доехал до концевика и определилось истинное расстояние)
-#define EMERGENCY_STEP_IMPULSES_TO_LIMIT		10000		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
-#define BUTTON_BOUNCE_FILTER_COUNTS				5			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
-#define BUTTON_LONG_PRESS_COUNTS				20			// количество тиков, после которого фиксируем долгое нажатие кнопки
-#define BUCKY_READY_DELAY_STEP_IMPULSES			3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
-#define MOTOR_TIMER_TICKS_PER_SEC				200000
-#define MOTOR_TIMER_TICK_DURATION_MKS			5
-#define EXPOSITITON_DISTANCE_STEP_IMPULSES		1826
+#define DIR_PIN_LOGIC_LEVEL_INVERTED				1			// инвертирован ли логический уровень направления (зависит от аппаратной конфигурации драйвера)
+#define ENABLE_PIN_LOGIC_LEVEL_INVERTED				1
+#define LIMIT_SWITCH_LOGIC_LEVEL_INVERTED			1			// если концевик при размокнутом состоянии выдаёт "1", выставляем флаг инверсии
+#define RASTER_SUPPLY_DISTANCE_STEP_IMPULSES		1000		// расстояние от концевика, на которое растр выдвигается для подачи
+#define EXPOSITION_MAX_DISTANCE_STEP_IMPULSES		900			// крайнее положение растра при экспозиции без ТОМО
+#define EMERGENCY_STEP_IMPULSES_TO_LIMIT			10000		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
+#define BUTTON_BOUNCE_FILTER_COUNTS					5			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
+#define BUTTON_LONG_PRESS_DURATION_SEC				2			// количество миллисекунд, после которого фиксируем долгое нажатие кнопки
+#define BUCKY_READY_DELAY_STEP_IMPULSES				3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
+#define SIGNALS_CHECK_TIMER_TICKS_PER_SEC			10
+#define MOTOR_TIMER_TICKS_PER_MS					200
+#define STEP_IMPULSES_DISTANCE_INITIAL				1
+#define SHORT_DISTANCE_STEP_IMPULSES		 		0 	//100
+#define FAR_DISTANCE_STEP_IMPULSES 					1826 + SHORT_DISTANCE_STEP_IMPULSES
+#define CONSTANT_SPEED_STEP_PER_MS					2.809
+#define MIN_SPEED_STEP_PER_MS_ALL_MODES 			3.138
+#define MAX_SPEED_STEP_PER_MS_MODE_00		 		9.07
+#define MAX_SPEED_STEP_PER_MS_MODE_01		 		7.937
+#define MAX_SPEED_STEP_PER_MS_MODE_10		 		10.006
+#define MAX_SPEED_STEP_PER_MS_MODE_11		 		14.257
+#define ACCELERATION_DURATION_MS_MODE_00			40
+#define ACCELERATION_DURATION_MS_MODE_01			32
+#define ACCELERATION_DURATION_MS_MODE_10			43
+#define ACCELERATION_DURATION_MS_MODE_11			52
+#define LINEAR_ACCELERATION_COEFFICIENT_INITIAL 	0
+#define QUADRATIC_ACCELERATION_COEFFICIENT_INITIAL 	0
 
+/*
 #define CONSTANT_SPEED_MKS_PER_STEP					400			//  !!! уточнить экспериментально
 #define MIN_SPEED_MKS_PER_STEP_IMPULSE_ALL_MODES	319
 #define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_00		107
 #define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_01		126
 #define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_10		94
 #define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_11		63
-#define ACCELERATION_TIME_MS_MODE_00				40
-#define ACCELERATION_TIME_MS_MODE_01				32
-#define ACCELERATION_TIME_MS_MODE_10				42
-#define ACCELERATION_TIME_MS_MODE_11				50
+*/
 
 
 /*
@@ -106,7 +117,7 @@ void device_init(void)
 {
 	device_current_state = DEVICE_STARTS;										// выставляем состояние устройства: устройство стартует
 	pins_init();																// инициализируем сигналы (указываем пины и порты, инициализируем единый массив сигналов)
-	output_signals_state_init(LOGIC_LEVEL_LOW);									// выставляем состояние выходных сигналов
+	output_signals_state_init(LOGIC_LEVEL_HIGH);									// выставляем состояние выходных сигналов
 	input_signals_state_update();												// считываем состояние входных сигналов
 	device_modules_init();														// инициализируем аппаратные модули (кнопки, датчики, мотор, интерфейс А1, DIP-переключатели)
 	buttons_state_update();														// обновляем состояние аппаратных модулей
@@ -150,8 +161,14 @@ void pins_init(void)
 	pushbutton_buckybrake.button_signal.signal_pin.GPIO_port_pointer = GPIOA;
 	pushbutton_buckybrake.button_signal.signal_pin.pin_number = PUSHBUTTON_BUCKYBRAKE_Pin;				// пин кнопки тормоза кассетоприёмника
 
-	limit_switch.GRID_END_POINT_IN_signal.signal_pin.GPIO_port_pointer = GPIOA;
-	limit_switch.GRID_END_POINT_IN_signal.signal_pin.pin_number = GRID_END_POINT_Pin;					// пин концевика
+	motor_instance_1.limit_switch.limit_switch_IN_signal.signal_pin.GPIO_port_pointer = GPIOA;
+	motor_instance_1.limit_switch.limit_switch_IN_signal.signal_pin.pin_number = GRID_END_POINT_Pin;					// пин концевика
+	motor_instance_1.motor_signals.STEP_OUT_signal.signal_pin.GPIO_port_pointer = GPIOB;
+	motor_instance_1.motor_signals.STEP_OUT_signal.signal_pin.pin_number = STEP_Pin;
+	motor_instance_1.motor_signals.DIR_OUT_signal.signal_pin.GPIO_port_pointer = GPIOB;
+	motor_instance_1.motor_signals.DIR_OUT_signal.signal_pin.pin_number = DIR_Pin;
+	motor_instance_1.motor_signals.ENABLE_OUT_signal.signal_pin.GPIO_port_pointer = GPIOB;
+	motor_instance_1.motor_signals.ENABLE_OUT_signal.signal_pin.pin_number = ENABLE_Pin;
 
 	DIP_switch.DIP_SWITCH_1_IN_signal.signal_pin.GPIO_port_pointer = GPIOA;
 	DIP_switch.DIP_SWITCH_1_IN_signal.signal_pin.pin_number = CONFIG_1_Pin;
@@ -168,29 +185,53 @@ void pins_init(void)
  */
 void device_modules_init(void)
 {
-	motor.step_impulses_distance_from_limit_switch = STEP_DISTANCE_INIT_VALUE;			// Задаём условное начальное расстояние от концевика, отличное от нуля. Чтобы мотор доехал до концевика и начал отсчёт.
-	motor.limit_emergency_counter = 0;													// обнуляем аварийный счётчик шагов
-	motor.motor_move_direction = MOVE_TO_COORD_END;										// задаём направление движения: двигаться ОТ начального положения
-	motor.step_pin_current_phase = STEP_LOW_PHASE;										// задаём фазу сигнала STEP
-	motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;					// даём двигателю задание занять начальное положение
-	motor.motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;							// выставляем флаг, что мотор находится в движении
-	motor.exposition_movement_direction = EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION;	// задаём начальное направление циклического движения при экспозиции
-	max_speed_mks_per_step_impulse = MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_00;
-	acceleration_time_ms = ACCELERATION_TIME_MS_MODE_00;
+	motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;					// даём двигателю задание занять начальное положение
+	motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;							// выставляем флаг, что мотор находится в движении
+	exposition_movement_direction = EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION;	// задаём начальное направление циклического движения при экспозиции
 	grid_supply_button.button_released_default_signal_level = LOGIC_LEVEL_LOW;			// выставляем флаг, что при отпущенной кнопке на пине "1"
 	grid_supply_button.button_pressing_duration_counter = 0;							// обнуляем счётчик продолжительности нажатия
+	grid_supply_button.button_bounce_filter_counts = BUTTON_BOUNCE_FILTER_COUNTS;
+	grid_supply_button.button_long_press_ms = BUTTON_LONG_PRESS_DURATION_SEC;
 	ON_TOMO_IN_flag = ON_TOMO_WAS_NOT_ENABLED;											// выставляем флаг, что сигнала ON_TOMO не было
 	bucky_ready_delay_counter = 0;														// обнуляем счётчик шагов, после которых выставляем BUCKY_READY в "1"
 	pushbutton_buckybrake.button_released_default_signal_level = LOGIC_LEVEL_LOW;		// выставляем флаг, что при отпущенной кнопке на пине "1"
 	pushbutton_buckybrake.button_pressing_duration_counter = 0;							// обнуляем счётчик продолжительности нажатия
-	ticks_before_next_step_counter = 0;
-	ticks_since_start_movement_counter = 0;
-	step_impulses_for_acceleration_counter = 0;
-	step_impulses_since_start_movement_counter = 0;
-	ticks_for_acceleration_counter = 0;
-	speed_mks_per_step_impulse = 0;
-	linear_acceleration_coefficient = 0;
-	quadratic_acceleration_coefficient = 0;
+	pushbutton_buckybrake.button_bounce_filter_counts = BUTTON_BOUNCE_FILTER_COUNTS;
+	pushbutton_buckybrake.button_long_press_ms = BUTTON_LONG_PRESS_DURATION_SEC;
+
+	motor_instance_1.limit_switch.limit_switch_logic_inverted = LIMIT_SWITCH_LOGIC_LEVEL_INVERTED;
+	motor_instance_1.emergency_step_impulses_to_limit = EMERGENCY_STEP_IMPULSES_TO_LIMIT;
+	motor_instance_1.DIR_pin_logic_level_inverted = DIR_PIN_LOGIC_LEVEL_INVERTED;
+	motor_instance_1.motor_timer_ticks_per_ms = MOTOR_TIMER_TICKS_PER_MS;
+	motor_instance_1.step_impulses_distance_from_limit_switch = STEP_IMPULSES_DISTANCE_INITIAL;
+	motor_instance_1.limit_emergency_counter = 0;
+	motor_instance_1.motor_movement_direction = MOVE_TO_COORD_END;
+	motor_instance_1.step_pin_current_phase = STEP_LOW_PHASE;
+	motor_instance_1.ticks_before_next_step_counter = 0;
+	motor_instance_1.ticks_since_start_movement_counter = 0;
+	motor_instance_1.step_impulses_since_start_movement_counter = 0;
+	motor_instance_1.current_speed_step_per_ms = 0;
+	motor_instance_1.ticks_for_acceleration_counter = 0;
+	motor_instance_1.step_impulses_for_acceleration_counter = 0;
+	motor_instance_1.cyclic_movement_direction = MOVE_TO_COORD_END;
+
+	movement_profile_1_default.acceleration_type = NO_ACCELERATION;
+	movement_profile_1_default.short_distance_step_impulses = SHORT_DISTANCE_STEP_IMPULSES;
+	movement_profile_1_default.far_distance_step_impulses = FAR_DISTANCE_STEP_IMPULSES;
+	movement_profile_1_default.min_speed_step_per_ms = CONSTANT_SPEED_STEP_PER_MS;
+	movement_profile_1_default.max_speed_step_per_ms = CONSTANT_SPEED_STEP_PER_MS;
+	movement_profile_1_default.linear_acceleration_coefficient = LINEAR_ACCELERATION_COEFFICIENT_INITIAL;
+	movement_profile_1_default.quadratic_acceleration_coefficient = QUADRATIC_ACCELERATION_COEFFICIENT_INITIAL;
+	movement_profile_1_default.acceleration_duration_ms = ACCELERATION_DURATION_MS_MODE_00;
+
+	movement_profile_2_exposition.acceleration_type = LINEAR_ACCELERATION;
+	movement_profile_2_exposition.short_distance_step_impulses = SHORT_DISTANCE_STEP_IMPULSES;
+	movement_profile_2_exposition.far_distance_step_impulses = FAR_DISTANCE_STEP_IMPULSES;
+	movement_profile_2_exposition.min_speed_step_per_ms = MIN_SPEED_STEP_PER_MS_ALL_MODES;
+	movement_profile_2_exposition.max_speed_step_per_ms = MAX_SPEED_STEP_PER_MS_MODE_00;
+	movement_profile_2_exposition.linear_acceleration_coefficient = LINEAR_ACCELERATION_COEFFICIENT_INITIAL;
+	movement_profile_2_exposition.quadratic_acceleration_coefficient = QUADRATIC_ACCELERATION_COEFFICIENT_INITIAL;
+	movement_profile_2_exposition.acceleration_duration_ms = ACCELERATION_DURATION_MS_MODE_00;
 }
 
 /*
@@ -200,7 +241,7 @@ void check_input_signals(void)
 {
 	input_signals_state_update();					// считываем состояние входов, обновляем их состояние в объекте устройства
 	buttons_state_update();							// обновляем состояние аппаратных модулей
-	device_error_check();							// проверяем текущее состояние устройства на наличие ошибок
+	device_error_check(&motor_instance_1);							// проверяем текущее состояние устройства на наличие ошибок
 	read_input_signals_and_set_device_state();		// изменяем состояние устройства в зависимости от входных сигналов
 }
 
@@ -208,23 +249,23 @@ void dip_switch_state_update(void)
 {
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
 	{
-		max_speed_mks_per_step_impulse = MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_00;
-		acceleration_time_ms = ACCELERATION_TIME_MS_MODE_00;
+		movement_profile_2_exposition.max_speed_step_per_ms = MAX_SPEED_STEP_PER_MS_MODE_00;
+		movement_profile_2_exposition.acceleration_duration_ms = ACCELERATION_DURATION_MS_MODE_00;
 	}
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 	{
-		max_speed_mks_per_step_impulse = MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_01;
-		acceleration_time_ms = ACCELERATION_TIME_MS_MODE_01;
+		movement_profile_2_exposition.max_speed_step_per_ms = MAX_SPEED_STEP_PER_MS_MODE_01;
+		movement_profile_2_exposition.acceleration_duration_ms = ACCELERATION_DURATION_MS_MODE_01;
 	}
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
 	{
-		max_speed_mks_per_step_impulse = MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_10;
-		acceleration_time_ms = ACCELERATION_TIME_MS_MODE_10;
+		movement_profile_2_exposition.max_speed_step_per_ms = MAX_SPEED_STEP_PER_MS_MODE_10;
+		movement_profile_2_exposition.acceleration_duration_ms = ACCELERATION_DURATION_MS_MODE_10;
 	}
 	if ((DIP_switch.DIP_SWITCH_1_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && (DIP_switch.DIP_SWITCH_2_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 	{
-		max_speed_mks_per_step_impulse = MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_11;
-		acceleration_time_ms = ACCELERATION_TIME_MS_MODE_11;
+		movement_profile_2_exposition.max_speed_step_per_ms = MAX_SPEED_STEP_PER_MS_MODE_11;
+		movement_profile_2_exposition.acceleration_duration_ms = ACCELERATION_DURATION_MS_MODE_11;
 	}
 }
 
@@ -240,7 +281,7 @@ void input_signals_state_update(void)
 	check_input_signal_state(&ON_TOMO_IN_signal);
 	check_input_signal_state(&BUCKY_CALL_IN_signal);
 	check_input_signal_state(&pushbutton_buckybrake.button_signal);
-	check_input_signal_state(&limit_switch.GRID_END_POINT_IN_signal);
+	check_input_signal_state(&motor_instance_1.limit_switch.limit_switch_IN_signal);
 	check_input_signal_state(&DIP_switch.DIP_SWITCH_1_IN_signal);
 	check_input_signal_state(&DIP_switch.DIP_SWITCH_2_IN_signal);
 	check_input_signal_state(&DIP_switch.DIP_SWITCH_3_IN_signal);
@@ -275,7 +316,6 @@ void signals_check_timer_interrupts_start(void)
  */
 void signals_check_timer_interrupt_handler(void)
 {
-	//HAL_GPIO_TogglePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN);
 	check_input_signals();
 }
 
@@ -284,107 +324,16 @@ void signals_check_timer_interrupt_handler(void)
  */
 void buttons_state_update(void)
 {
-	check_and_update_button_state(&grid_supply_button);
-	check_and_update_button_state(&pushbutton_buckybrake);
+	check_and_update_button_state(&grid_supply_button, SIGNALS_CHECK_TIMER_TICKS_PER_SEC);
+	check_and_update_button_state(&pushbutton_buckybrake, SIGNALS_CHECK_TIMER_TICKS_PER_SEC);
 }
 
-/*
- * Считывание и запись состояния входного пина
- */
-void check_input_signal_state(InSignalAttributes_TypeDef* signal_to_check)
-{
-	GPIO_PinState current_logic_state = HAL_GPIO_ReadPin(signal_to_check->signal_pin.GPIO_port_pointer, signal_to_check->signal_pin.pin_number);
-
-	switch (current_logic_state)
-	{
-	case GPIO_PIN_SET:
-	{
-		signal_to_check->signal_logic_level = LOGIC_LEVEL_HIGH;
-		break;
-	}
-	case GPIO_PIN_RESET:
-	{
-		signal_to_check->signal_logic_level = LOGIC_LEVEL_LOW;
-		break;
-	}
-	}
-}
-
-/*
- * Выставляем логическое состояние на выходном пине
- */
-void set_output_signal_state(GPIO_TypeDef* GPIO_port_pointer, uint16_t pin_number, SignalLogicLevel_EnumTypeDef requied_logic_level)
-{
-	if (requied_logic_level == LOGIC_LEVEL_LOW)
-	{
-		HAL_GPIO_WritePin(GPIO_port_pointer, pin_number, GPIO_PIN_RESET);
-	}
-	else
-	{
-		HAL_GPIO_WritePin(GPIO_port_pointer, pin_number, GPIO_PIN_SET);
-	}
-}
-
-/*
- * Проверяем состояние кнопки
- */
-void check_and_update_button_state(ButtonAttributes_TypeDef* button_to_check)
-{
-	if (button_to_check->button_released_default_signal_level == LOGIC_LEVEL_LOW)						// если при отпущенной кнопке логическое состояние пина "0"
-	{
-		if (button_to_check->button_signal.signal_logic_level == LOGIC_LEVEL_HIGH)						// если текущий уровень сигнала на пине кнопки "1"
-		{
-			if (button_to_check->button_current_state != BUTTON_LONG_PRESS)								// если ещё не было зафиксировано долгое нажатие
-			{
-				if (button_to_check->button_pressing_duration_counter >= BUTTON_BOUNCE_FILTER_COUNTS)	// если нажатие длится дольше, чем нужно для фильтрации дребезга
-				{
-					button_to_check->button_current_state = BUTTON_SHORT_PRESS;							// выставляем флаг короткого нажатия
-				}
-			}
-			if (button_to_check->button_pressing_duration_counter >= BUTTON_LONG_PRESS_COUNTS)			// если счётчик продолжительности нажатия дошёл до значения длительного нажатия
-			{
-				button_to_check->button_pressing_duration_counter = BUTTON_LONG_PRESS_COUNTS;			// удерживаем счётчик от дальнейшего увеличения
-				button_to_check->button_current_state = BUTTON_LONG_PRESS;								// выставляем флаг долгого нажатия
-			}
-			button_to_check->button_pressing_duration_counter = button_to_check->button_pressing_duration_counter + 1;	// инкрементируем счётчик продолжительности нажатия
-		}
-		else																							// если текущий уровень сигнала на пине кнопки "0"
-		{
-			button_to_check->button_pressing_duration_counter = 0;										// обнуляем счётчик продолжительности нажатия
-			button_to_check->button_current_state = BUTTON_RELEASED;									// выставляем флаг, что кнопка отпущена
-		}
-	}
-	else																								// если при отпущенной кнопке логическое состояние пина "1"
-	{
-		if (button_to_check->button_signal.signal_logic_level == LOGIC_LEVEL_HIGH)						// если текущий уровень сигнала на пине кнопки "1"
-		{
-			button_to_check->button_pressing_duration_counter = 0;										// обнуляем счётчик продолжительности нажатия
-			button_to_check->button_current_state = BUTTON_RELEASED;									// выставляем флаг, что кнопка отпущена
-		}
-		else																							// если текущий уровень сигнала на пине кнопки "0"
-		{
-			if (button_to_check->button_current_state != BUTTON_LONG_PRESS)								// если ещё не было зафиксировано долгое нажатие
-			{
-				if (button_to_check->button_pressing_duration_counter >= BUTTON_BOUNCE_FILTER_COUNTS)	// если нажатие длится дольше, чем нужно для фильтрации дребезга
-				{
-					button_to_check->button_current_state = BUTTON_SHORT_PRESS;							// выставляем флаг короткого нажатия
-				}
-			}
-			if (button_to_check->button_pressing_duration_counter >= BUTTON_LONG_PRESS_COUNTS)			// если счётчик продолжительности нажатия дошёл до значения длительного нажатия
-			{
-				button_to_check->button_pressing_duration_counter = BUTTON_LONG_PRESS_COUNTS;			// удерживаем счётчик от дальнейшего увеличения
-				button_to_check->button_current_state = BUTTON_LONG_PRESS;								// выставляем флаг долгого нажатия
-			}
-			button_to_check->button_pressing_duration_counter = button_to_check->button_pressing_duration_counter + 1;	// инкрементируем счётчик продолжительности нажатия
-		}
-	}
-}
 
 /*
  * Проверка текущего состояния устройства на наличие ошибок
  */
 
-void device_error_check(void)
+void device_error_check(MotorObject_StructTypeDef* motor_object)
 {
 	/*
 	 * если определён тип растра 120 и 180 одновременно
@@ -395,9 +344,9 @@ void device_error_check(void)
 		error_code = GRID_TYPE_ERROR;									// выставляем флаг ошибки типа растра
 		device_current_state = DEVICE_STANDBY;							// переключаем устройство в режим ожидания
 	}
-	if (motor.limit_emergency_counter >= EMERGENCY_STEP_IMPULSES_TO_LIMIT)		// если прошагали критическое количество шагов в сторону концевика
+	if (motor_object->limit_emergency_counter >= motor_object->emergency_step_impulses_to_limit)		// если прошагали критическое количество шагов в сторону концевика
 	{
-		motor.limit_emergency_counter = EMERGENCY_STEP_IMPULSES_TO_LIMIT;		// удерживаем аварийный счётчик шагов от дальнейшего увеличения
+		motor_object->limit_emergency_counter = EMERGENCY_STEP_IMPULSES_TO_LIMIT;		// удерживаем аварийный счётчик шагов от дальнейшего увеличения
 		error_code = LIMIT_SWITCH_ERROR;								// выставляем ошибку концевика (решаем, что концевик неисправен)
 		device_current_state = DEVICE_ERROR;							// переключаем устройство в состояние ошибки
 	}
@@ -455,7 +404,7 @@ void device_error_handler(void)
 		 */
 		if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
 			(BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
-			(motor.motor_movement_status == MOTOR_MOVEMENT_COMPLETED))
+			(motor_movement_status == MOTOR_MOVEMENT_COMPLETED))
 		{
 			error_code = NO_ERROR;		// выставляем флаг отсутствия ошибки
 		}
@@ -474,13 +423,13 @@ void read_input_signals_and_set_device_state(void)
 	case DEVICE_STARTS:																// если устройство стартует
 	{
 		device_current_state = DEVICE_RETURN_TO_INITIAL_STATE;						// выставляем состояние устройства: возврат в начальное положение
-		motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// назначение движения: возврат в начальное положение
-		motor_movement_start();
+		motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// назначение движения: возврат в начальное положение
+		motor_movement_start(&motor_instance_1, &movement_profile_1_default);
 		break;
 	}
 	case DEVICE_ERROR:																// если возникла ошибка
 	{
-		motor.motor_movement_purpose = MOTOR_PURPOSE_INSTANT_STOP;					// останавливаем мотор
+		motor_movement_purpose = MOTOR_PURPOSE_INSTANT_STOP;					// останавливаем мотор
 		device_error_handler();														// вызываем обработчик ошибок
 		break;
 	}
@@ -504,20 +453,20 @@ void read_input_signals_and_set_device_state(void)
 			/*
 			 * если растр был извлечён и кнопка подачи растра нажата долго
 			 */
-			if (motor.step_impulses_distance_from_limit_switch >= RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)
+			if (motor_instance_1.step_impulses_distance_from_limit_switch >= RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)
 			{
-				motor.motor_movement_purpose = MOTOR_PURPOSE_GRID_INSERTION;						// назначение движения: вставить растр
-				motor_movement_start();																// начинаем движение
+				motor_movement_purpose = MOTOR_PURPOSE_GRID_INSERTION;						// назначение движения: вставить растр
+				motor_movement_start(&motor_instance_1, &movement_profile_1_default);																// начинаем движение
 			}
 			/*
 			 * если растр был вставлен и кнопка подачи растра нажата долго
 			 */
-			if (motor.step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)
+			if (motor_instance_1.step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)
 			{
 				set_output_signal_state(GRID_120_OUT_PORT, GRID_120_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_120
 				set_output_signal_state(GRID_180_OUT_PORT, GRID_180_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_180
-				motor.motor_movement_purpose = MOTOR_PURPOSE_GRID_EXTRACTION;						// назначение движения: извлечь растр
-				motor_movement_start();																// начинаем движение
+				motor_movement_purpose = MOTOR_PURPOSE_GRID_EXTRACTION;						// назначение движения: извлечь растр
+				motor_movement_start(&motor_instance_1, &movement_profile_1_default);																// начинаем движение
 			}
 		}
 		/*
@@ -526,11 +475,11 @@ void read_input_signals_and_set_device_state(void)
 		else if ((BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
 				(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
 				(ON_TOMO_IN_flag == ON_TOMO_WAS_NOT_ENABLED) && \
-				(motor.step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES))
+				(motor_instance_1.step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES))
 		{
 			device_current_state = DEVICE_SCANING_TOMO_OFF;											// выставляем состояние устройства: экспозиция без ON_TOMO
-			motor.motor_movement_purpose = MOTOR_PURPOSE_EXPOSITION_TOMO_OFF;						// назначение движения: экспозиция без ON_TOMO
-			motor_movement_start();																	// начинаем движение
+			motor_movement_purpose = MOTOR_PURPOSE_EXPOSITION_TOMO_OFF;						// назначение движения: экспозиция без ON_TOMO
+			motor_movement_start(&motor_instance_1, &movement_profile_2_exposition);																	// начинаем движение
 		}
 		/*
 		 * иначе если сигнал ON_TOMO активен и сигнал ON_TOMO не был активен ранее
@@ -546,21 +495,21 @@ void read_input_signals_and_set_device_state(void)
 		else if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
 				(BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
 				(ON_TOMO_IN_flag == ON_TOMO_WAS_ENABLED) && \
-				(motor.step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES))
+				(motor_instance_1.step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES))
 		{
 			device_current_state = DEVICE_SCANING_TOMO_ON;											// выставляем состояние устройства: экспозиция с ON_TOMO
-			motor.motor_movement_purpose = MOTOR_PURPOSE_EXPOSITION_TOMO_ON;						// назначние движения: экспозиция с ON_TOMO
-			motor_movement_start();																	// начинаем движение
+			motor_movement_purpose = MOTOR_PURPOSE_EXPOSITION_TOMO_ON;						// назначние движения: экспозиция с ON_TOMO
+			motor_movement_start(&motor_instance_1, &movement_profile_2_exposition);																	// начинаем движение
 		}
 		/*
 		 * иначе если концевик неактивен и мы не в положении подачи растра
 		 */
-		else if ((!(limit_switch_return_state())) && \
-				(!(motor.step_impulses_distance_from_limit_switch >= RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)))
+		else if ((!(limit_switch_return_state(&motor_instance_1))) && \
+				(!(motor_instance_1.step_impulses_distance_from_limit_switch >= RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)))
 		{
 			device_current_state = DEVICE_RETURN_TO_INITIAL_STATE;									// выставляем состояние устройства: возврат в начальное положение
-			motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;						// назначение движения: возврат в начальное положение
-			motor_movement_start();																	// начинаем движение
+			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;						// назначение движения: возврат в начальное положение
+			motor_movement_start(&motor_instance_1, &movement_profile_1_default);																	// начинаем движение
 		}
 		/*
 		 * иначе если кнопка тормоза кассетоприёмника нажата
@@ -593,8 +542,8 @@ void read_input_signals_and_set_device_state(void)
 		/*
 		 * если назначение движения "вставить растр" и статус движения "движение завершено"
 		 */
-		if ((motor.motor_movement_purpose == MOTOR_PURPOSE_GRID_INSERTION) && \
-			(motor.motor_movement_status == MOTOR_MOVEMENT_COMPLETED))
+		if ((motor_movement_purpose == MOTOR_PURPOSE_GRID_INSERTION) && \
+			(motor_movement_status == MOTOR_MOVEMENT_COMPLETED))
 		{
 			/*
 			 * если растр не представлен
@@ -623,7 +572,7 @@ void read_input_signals_and_set_device_state(void)
 			}
 		}
 
-		if (motor.motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 	// если статус мотора "движение завершено"
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 	// если статус мотора "движение завершено"
 		{
 
 			device_current_state = DEVICE_STANDBY;						// выставляем состояние устройства: "режим ожидания"
@@ -632,7 +581,7 @@ void read_input_signals_and_set_device_state(void)
 	}
 	case DEVICE_RETURN_TO_INITIAL_STATE:
 	{
-		if (motor.motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 	// если статус мотора "движение завершено"
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 	// если статус мотора "движение завершено"
 		{
 			device_current_state = DEVICE_STANDBY;						// выставляем состояние устройства: "режим ожидания"
 		}
@@ -640,7 +589,7 @@ void read_input_signals_and_set_device_state(void)
 	}
 	case DEVICE_SCANING_TOMO_OFF:
 	{
-		if (motor.motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 	// если статус мотора "движение завершено"
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 	// если статус мотора "движение завершено"
 		{
 			device_current_state = DEVICE_STANDBY;						// выставляем состояние устройства: "режим ожидания"
 		}
@@ -648,7 +597,7 @@ void read_input_signals_and_set_device_state(void)
 	}
 	case DEVICE_SCANING_TOMO_ON:
 	{
-		if (motor.motor_movement_status == MOTOR_MOVEMENT_COMPLETED)	// если статус мотора "движение завершено"
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED)	// если статус мотора "движение завершено"
 		{
 			device_current_state = DEVICE_STANDBY;						// выставляем состояние устройства: "режим ожидания"
 		}
@@ -682,18 +631,18 @@ void motor_timer_interrupts_stop(void)
 /*
  * Начинаем движение мотора
  */
-void motor_movement_start(void)
+void motor_movement_start(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile)
 {
-	if ((motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_OFF) || (motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_ON))
-	{
-		dip_switch_state_update();
-		calculate_acceleration_coefficient();
-	}
 	if (device_current_state == DEVICE_STANDBY)							// если устройство в режиме ожидания
 	{
 		error_code = STANDBY_MOVEMENT_ERROR;							// выставляем ошибку (нельзя двигаться в режиме ожидания)
 	}
-	motor.motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;			// выставляем флаг, что мотор находится в движении
+	if ((motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_OFF) || (motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_ON))
+	{
+		dip_switch_state_update();
+	}
+	motor_movement_init(motor_object, movement_profile);
+	motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;			// выставляем флаг, что мотор находится в движении
 	motor_timer_interrupts_start();										// запускаем прерывания, по которым мотор будет шагать
 }
 
@@ -703,19 +652,10 @@ void motor_movement_start(void)
 void motor_movement_complete(void)
 {
 	motor_timer_interrupts_stop();										// останавливаем прерывания, по которым шагает мотор
-	motor.motor_movement_status = MOTOR_MOVEMENT_COMPLETED;				// выставляем флаг, что движение завершено
-	reset_movement_counters();
+	motor_movement_status = MOTOR_MOVEMENT_COMPLETED;				// выставляем флаг, что движение завершено
+	//reset_movement_counters(&motor_instance_1);
 }
 
-/*
- * Делаем шаг в заданном направлении
- */
-void motor_make_step_to_direction(MotorMoveDirection_EnumTypeDef move_direction)
-{
-	motor.motor_move_direction = move_direction;						// выставляем направление шага
-	motor_direction_pin_set();											// выставляем нужное состояние на пине направления
-	check_limit_switch_and_make_step();									// проверяем состояние концевика и совершаем шаг
-}
 
 /*
  * Начинаем отсчёт шагов до выставления сигнала BUCKY_READY
@@ -756,68 +696,10 @@ void bucky_ready_response_delay_check(void)
 	}
 }
 
-void reset_movement_counters(void)
-{
-	ticks_before_next_step_counter = 0;
-	ticks_since_start_movement_counter = 0;
-	step_impulses_for_acceleration_counter = 0;
-	step_impulses_since_start_movement_counter = 0;
-	ticks_for_acceleration_counter = 0;
-}
 
-void calculate_acceleration_coefficient(void)
+void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile)
 {
-	linear_acceleration_coefficient = ((max_speed_mks_per_step_impulse - MIN_SPEED_MKS_PER_STEP_IMPULSE_ALL_MODES)*1000)/acceleration_time_ms;
-	quadratic_acceleration_coefficient = ((max_speed_mks_per_step_impulse - MIN_SPEED_MKS_PER_STEP_IMPULSE_ALL_MODES)*1000*1000)/acceleration_time_ms/acceleration_time_ms;
-}
-
-int64_t movement_time_function(uint64_t ticks_value)
-{
-	int64_t calculated_speed_mks_per_step_impulse = 0;
-	// calculated_speed_mks_per_step_impulse = ((time_value*time_value*quadratic_acceleration_coefficient)/MOTOR_TIMER_TICKS_PER_SEC/MOTOR_TIMER_TICKS_PER_SEC) + MIN_STEP_IMPULSES_PER_SEC_ALL_MODES;
-	calculated_speed_mks_per_step_impulse = (ticks_value * linear_acceleration_coefficient)/MOTOR_TIMER_TICKS_PER_SEC + MIN_SPEED_MKS_PER_STEP_IMPULSE_ALL_MODES;
-	return calculated_speed_mks_per_step_impulse;
-}
-
-void calculate_ticks_per_next_step(void)
-{
-	if ((motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_OFF) || (motor.motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_ON))
-	{
-		// если оставшееся количество шагов больше количества шагов для ускорения/замедления, мы либо ускоряемся, либо движемся с макс. скоростью
-		if ((EXPOSITITON_DISTANCE_STEP_IMPULSES - step_impulses_since_start_movement_counter) > step_impulses_for_acceleration_counter)
-		{
-			// если мы не достигли максимальной скорости, ускоряемся
-			if (speed_mks_per_step_impulse < max_speed_mks_per_step_impulse)
-			{
-				speed_mks_per_step_impulse = movement_time_function(ticks_since_start_movement_counter);
-				ticks_before_next_step_counter = speed_mks_per_step_impulse/MOTOR_TIMER_TICK_DURATION_MKS;
-				step_impulses_for_acceleration_counter++;
-			}
-			// иначе движемся с максимальной скоростью
-			else
-			{
-				ticks_before_next_step_counter = max_speed_mks_per_step_impulse/MOTOR_TIMER_TICK_DURATION_MKS;
-			}
-		}
-		// иначе замедляемся
-		else
-		{
-			speed_mks_per_step_impulse = movement_time_function(ticks_for_acceleration_counter);
-			ticks_before_next_step_counter = speed_mks_per_step_impulse/MOTOR_TIMER_TICK_DURATION_MKS;
-		}
-	}
-	else
-	{
-		ticks_before_next_step_counter = CONSTANT_SPEED_MKS_PER_STEP/MOTOR_TIMER_TICK_DURATION_MKS;
-	}
-	step_impulses_since_start_movement_counter++;
-}
-
-void motor_check_conditions_and_step(void)
-{
-	//motor_make_step_to_direction(MOVE_TO_COORD_END);
-
-	switch (motor.motor_movement_purpose)												// если назначение движения мотора
+	switch (motor_movement_purpose)												// если назначение движения мотора
 	{
 	case MOTOR_PURPOSE_INSTANT_STOP:													// если назначение движения мотора - мгновенная остановка
 	{
@@ -826,9 +708,9 @@ void motor_check_conditions_and_step(void)
 	}
 	case MOTOR_PURPOSE_GRID_INSERTION:													// если назначение движения мотора - вставить растр
 	{
-		if (!(limit_switch_return_state()))												// если концевик не активен
+		if (!(limit_switch_return_state(&motor_instance_1)))												// если концевик не активен
 		{
-			motor_make_step_to_direction(MOVE_TO_COORD_ORIGIN);							// двигаемся к начальной точке
+			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);							// двигаемся к начальной точке
 		}
 		else
 		{
@@ -841,9 +723,9 @@ void motor_check_conditions_and_step(void)
 	}
 	case MOTOR_PURPOSE_GRID_EXTRACTION:													// если назначение движения мотора - извлечь растр
 	{
-		if (motor.step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)		// если мы не дошли до крайнего положения
+		if (motor_object->step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)		// если мы не дошли до крайнего положения
 		{
-			motor_make_step_to_direction(MOVE_TO_COORD_END);							// движемся от начальной точки (наружу)
+			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_END);							// движемся от начальной точки (наружу)
 		}
 		else
 		{
@@ -858,13 +740,13 @@ void motor_check_conditions_and_step(void)
 	{
 		if (BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)				// если сигнал BUCKY_CALL в "1"
 		{
-			cyclic_movement_step();														// делаем шаг
+			cyclic_movement_step(&motor_instance_1, &movement_profile_2_exposition);														// делаем шаг
 			bucky_ready_response_set(LOGIC_LEVEL_HIGH);									// запускаем счётчик шагов до выставления сигнала BUCKY_READY
 		}
 		else
 		{
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// иначе выключаем сигнал BUCKY_READY
-			motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
+			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
 		}
 		break;
 	}
@@ -879,7 +761,7 @@ void motor_check_conditions_and_step(void)
 				ON_TOMO_IN_flag = ON_TOMO_WAS_ENABLED_AND_DISABLED;						// выставляем флаг, что ON_TOMO был в "1", а затем в "0"
 				bucky_ready_response_set(LOGIC_LEVEL_HIGH);								// запускаем счётчик шагов до выставления сигнала BUCKY_READY
 			}
-			cyclic_movement_step();														// делаем шаг
+			cyclic_movement_step(&motor_instance_1, &movement_profile_2_exposition);														// делаем шаг
 		}
 
 		// если сигнал ON_TOMO был включён и выключен, и сигнал ON_TOMO включён
@@ -887,7 +769,7 @@ void motor_check_conditions_and_step(void)
 			(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 		{
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// выключаем сигнал BUCKY_READY
-			motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
+			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
 		}
 		// если сигнал BUCKY_CALL выключен, и сигнал ON_TOMO был включён и выключен, и сигнал ON_TOMO сейчас выключен
 		if ((BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
@@ -897,15 +779,15 @@ void motor_check_conditions_and_step(void)
 			device_current_state = DEVICE_ERROR;										// переключаем устройство в состояние ошибки
 			error_code = ON_TOMO_BUCKY_CALL_ERROR;										// выставляем ошибку (BUCKY_CALL выключился прежде, чем ON_TOMO включился повторно)
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// выключаем сигнал BUCKY_READY
-			motor.motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
+			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
 		}
 		break;
 	}
 	case MOTOR_PURPOSE_TAKE_INITIAL_POSITION:											// если назначение движения - вернуться в начальную позицию
 	{
-		if(!(limit_switch_return_state()))												// если концевик не активен
+		if(!(limit_switch_return_state(&motor_instance_1)))												// если концевик не активен
 		{
-			motor_make_step_to_direction(MOVE_TO_COORD_ORIGIN);							// делаем шаг в направлении начального положения
+			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);							// делаем шаг в направлении начального положения
 		}
 		else
 		{
@@ -916,186 +798,11 @@ void motor_check_conditions_and_step(void)
 	}
 }
 
-void motor_make_one_step(void)
-{
-	bucky_ready_response_delay_check();														// проверяем, надо ли выставить сигнал BUCKY_READY в "1"
-	motor_check_conditions_and_step();
-	//HAL_GPIO_TogglePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN);
-	calculate_ticks_per_next_step();
-}
-
-uint32_t test_count = 0;
 /*
  * Обработчик прерываний таймера, отвечающего за шаги мотора
  */
 void motor_timer_interrupt_handler(void)
 {
-	ticks_since_start_movement_counter++;
-	ticks_before_next_step_counter--;
-	if ((EXPOSITITON_DISTANCE_STEP_IMPULSES - step_impulses_since_start_movement_counter) >= step_impulses_for_acceleration_counter)
-	{
-		if (speed_mks_per_step_impulse < max_speed_mks_per_step_impulse)
-		{
-			ticks_for_acceleration_counter++;
-		}
-	}
-	else
-	{
-		ticks_for_acceleration_counter--;
-	}
-
-	if (ticks_before_next_step_counter <= 0)
-	{
-		motor_make_one_step();
-	}
-
-	// HAL_GPIO_TogglePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN);
+	motor_check_conditions_and_step(&motor_instance_1,  &movement_profile_2_exposition);
 }
 
-/*
- * Циклическое движение мотора в режиме экспозиции
- */
-void cyclic_movement_step(void)
-{
-	if (motor.step_impulses_distance_from_limit_switch <= 0)					// если мы в крайней точке точке, ближайшей к начальному положению
-	{
-		motor.exposition_movement_direction = EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION;			// выставляем флаг движения от начального положения
-		motor_make_step_to_direction(MOVE_TO_COORD_END);											// делаем шаг в сторону от начального положения
-		reset_movement_counters();
-	}
-	/*
-	 * если мы находимся в промежутке между крайними положениями растра (ближнее и дальнее)
-	 */
-	if ((motor.step_impulses_distance_from_limit_switch > 0) && \
-			(motor.step_impulses_distance_from_limit_switch < EXPOSITITON_DISTANCE_STEP_IMPULSES))
-	{
-		if (motor.exposition_movement_direction == EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION)		// если выставлен флаг движения от начального положения
-		{
-			motor_make_step_to_direction(MOVE_TO_COORD_END);										// делаем шаг от начального положения
-		}
-		else
-		{
-			motor_make_step_to_direction(MOVE_TO_COORD_ORIGIN);										// иначе делаем шаг в сторону начального положения
-		}
-	}
-	if (motor.step_impulses_distance_from_limit_switch >= EXPOSITITON_DISTANCE_STEP_IMPULSES)						// если мы в крайней точке, дальней от начального положения
-	{
-		motor.exposition_movement_direction = ON_TOMO_MOVEMENT_TO_INITIAL_POSITION;					// выставляем флаг движения к начальному положению
-		motor_make_step_to_direction(MOVE_TO_COORD_ORIGIN);											// делаем шаг в сторону начального положения
-		reset_movement_counters();
-	}
-}
-
-/*
- * выставляем пин направления мотора
- */
-void motor_direction_pin_set(void)
-{
-	switch (motor.motor_move_direction)																// если направление движения
-	{
-	case MOVE_TO_COORD_ORIGIN:																		// если направление движения к начальному положению
-	{
-		if (DIR_PIN_LOGIC_LEVEL_INVERTED)		// !! ifdef											// если логический уровень направления инвертирован аппаратно
-		{
-			HAL_GPIO_WritePin(MOTOR_DIR_OUT_PORT, MOTOR_DIR_OUT_PIN, GPIO_PIN_RESET);				// выставляем "0" на пине направления
-		}
-		else
-		{
-			HAL_GPIO_WritePin(MOTOR_DIR_OUT_PORT, MOTOR_DIR_OUT_PIN, GPIO_PIN_SET);					// иначе выставляем "1" на пине направления
-		}
-		break;
-	}
-	case MOVE_TO_COORD_END:																			// если направление движения от начального положения
-	{
-		if (DIR_PIN_LOGIC_LEVEL_INVERTED)															// если логический уровень направления инвертирован аппаратно
-		{
-			HAL_GPIO_WritePin(MOTOR_DIR_OUT_PORT, MOTOR_DIR_OUT_PIN, GPIO_PIN_SET);					// выставляем "1" на пине направления
-		}
-		else
-		{
-			HAL_GPIO_WritePin(MOTOR_DIR_OUT_PORT, MOTOR_DIR_OUT_PIN, GPIO_PIN_RESET);				// иначе выставляем "0" на пине направления
-		}
-		break;
-	}
-	}
-}
-
-/*
- * проверяем состояние концевика и совершаем шаг
- */
-void check_limit_switch_and_make_step(void)
-{
-	/*
-	 * если направление движения к начальному положению, и концевик не активен, и не пройдено аварийное количество шагов к начальному положению
-	 */
-	if ((motor.motor_move_direction == MOVE_TO_COORD_ORIGIN) && \
-		(!(limit_switch_return_state())) && \
-		(motor.limit_emergency_counter < EMERGENCY_STEP_IMPULSES_TO_LIMIT))
-	{
-		step_toggle();																				// совершаем шаг
-		motor.step_impulses_distance_from_limit_switch = motor.step_impulses_distance_from_limit_switch - 1;		// декрементируем счётчик расстояния от начального положения
-		motor.limit_emergency_counter = motor.limit_emergency_counter + 1;							// инкрементируем аварийный счётчик шагов
-	}
-	if (motor.motor_move_direction == MOVE_TO_COORD_END)											// если направлениение движения от начального положения
-	{
-		step_toggle();																				// совершаем шаг
-		motor.step_impulses_distance_from_limit_switch = motor.step_impulses_distance_from_limit_switch + 1;		// инкрементируем счётчик расстояния от начального положения
-		motor.limit_emergency_counter = 0;															// обнуляем аварийный счётчик шагов
-	}
-}
-
-/*
- * совершаем шаг
- */
-void step_toggle(void)
-{
-	switch (motor.step_pin_current_phase)															// если текущее логическое состояние на пине шага
-	{
-	case STEP_LOW_PHASE:																			// если текущеее логическое состояние "0"
-	{
-		HAL_GPIO_WritePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN, GPIO_PIN_SET);					// выставляем "1" на пине шага
-		motor.step_pin_current_phase = STEP_HIGH_PHASE;												// выставляем флаг, что пин шага находится в логическом состоянии "1"
-		break;
-	}
-	case STEP_HIGH_PHASE:																			// если текущеее логическое состояние "1"
-	{
-		HAL_GPIO_WritePin(MOTOR_STEP_OUT_PORT, MOTOR_STEP_OUT_PIN, GPIO_PIN_RESET);					// выставляем "0" на пине шага
-		motor.step_pin_current_phase = STEP_LOW_PHASE;												// выставляем флаг, что пин шага находится в логическом состоянии "0"
-		break;
-	}
-	}
-}
-
-/*
- * опрашиваем и возрващаем состояние концевика
- */
-_Bool limit_switch_return_state(void)
-{
-	_Bool current_state;																			// флаг состояния концевика
-	check_input_signal_state(&limit_switch.GRID_END_POINT_IN_signal);								// опрашиваем состояние пина концевика
-	if (LIMIT_SWITCH_LOGIC_LEVEL_INVERTED)															// если логический уровень концевика инвертирован аппаратно
-	{
-		if (limit_switch.GRID_END_POINT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)			// если на пине концевика "0"
-		{
-			current_state = 1;																		// выставляем флаг концевика в "1"
-			motor.step_impulses_distance_from_limit_switch = 0;												// обнуляем счётчик расстояния до концевика
-		}
-		else
-		{
-			current_state = 0;																		// иначе выставляем флаг концевика в "0"
-		}
-	}
-	else
-	{
-		if (limit_switch.GRID_END_POINT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)			// иначе если на пине концевика "0"
-		{
-			current_state = 0;																		// выставляем флаг концевика в "0"
-		}
-		else
-		{
-			current_state = 1;																		// иначе выставляем флаг концевика в "1"
-			motor.step_impulses_distance_from_limit_switch = 0;												// обнуляем счётчик расстояния до концевика
-		}
-	}
-	return current_state;																			// возвращаем флаг состояния концевика
-}

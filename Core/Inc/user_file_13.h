@@ -21,7 +21,7 @@
 ********************************************************************************
 */
 
-#include "main.h"
+#include "universal_extern_lib_1.h"
 
 /*
 ********************************************************************************
@@ -51,35 +51,6 @@ typedef enum
 	LIMIT_SWITCH_DISABLED
 
 } LimitSwitchState_EnumTypeDef;
-
-typedef enum
-{
-	MOVE_TO_COORD_ORIGIN,
-	MOVE_TO_COORD_END
-
-} MotorMoveDirection_EnumTypeDef;
-
-typedef enum
-{
-	STEP_LOW_PHASE,
-	STEP_HIGH_PHASE
-
-} StepPinPhase_EnumTypeDef;
-
-typedef enum
-{
-	LOGIC_LEVEL_LOW,
-	LOGIC_LEVEL_HIGH
-
-} SignalLogicLevel_EnumTypeDef;
-
-typedef enum
-{
-	BUTTON_RELEASED,
-	BUTTON_SHORT_PRESS,
-	BUTTON_LONG_PRESS
-
-} ButtonState_EnumTypeDef;
 
 typedef enum
 {
@@ -165,64 +136,15 @@ typedef enum
 **********************************************************
 */
 
-typedef struct
-{
-	GPIO_TypeDef* GPIO_port_pointer;
-	uint16_t pin_number;
-
-} PinAttributes_TypeDef;
-
-typedef struct
-{
-	PinAttributes_TypeDef signal_pin;
-	SignalLogicLevel_EnumTypeDef signal_logic_level;
-
-} InSignalAttributes_TypeDef;
-
-typedef struct
-{
-	InSignalAttributes_TypeDef button_signal;
-	SignalLogicLevel_EnumTypeDef button_released_default_signal_level;
-	ButtonState_EnumTypeDef button_current_state;
-	uint32_t button_pressing_duration_counter;
-
-} ButtonAttributes_TypeDef;
-
-/*
- * Управление шаговым мотором (мотор, концевики, потенциометр)
- */
-typedef struct
-{
-	int32_t step_impulses_distance_from_limit_switch;
-	int32_t limit_emergency_counter;
-	MotorMoveDirection_EnumTypeDef motor_move_direction;			// направление движения мотора
-	StepPinPhase_EnumTypeDef step_pin_current_phase;				// текущее логическое состояние пина шага
-	MotorMovementPurpose_EnumTypeDef motor_movement_purpose;
-	MotorMovementStatus_EnumTypeDef motor_movement_status;
-	OnTomoMovementDirectionFlag_EnumTypeDef exposition_movement_direction;
-
-} Motor_TypeDef;
-
 /*
  * Датчик типа растра
  */
 typedef struct
 {
-	InSignalAttributes_TypeDef GRID_120_DETECT_IN_signal;
-	InSignalAttributes_TypeDef GRID_180_DETECT_IN_signal;
+	InSignalAttributes_StructTypeDef GRID_120_DETECT_IN_signal;
+	InSignalAttributes_StructTypeDef GRID_180_DETECT_IN_signal;
 
 } GridSensor_TypeDef;
-
-
-/*
- * Концевик
- */
-
-typedef struct
-{
-	InSignalAttributes_TypeDef GRID_END_POINT_IN_signal;
-
-} LimitSwitch_TypeDef;
 
 /*
  * DIP-переключатель
@@ -230,9 +152,9 @@ typedef struct
 
 typedef struct
 {
-	InSignalAttributes_TypeDef DIP_SWITCH_1_IN_signal;
-	InSignalAttributes_TypeDef DIP_SWITCH_2_IN_signal;
-	InSignalAttributes_TypeDef DIP_SWITCH_3_IN_signal;
+	InSignalAttributes_StructTypeDef DIP_SWITCH_1_IN_signal;
+	InSignalAttributes_StructTypeDef DIP_SWITCH_2_IN_signal;
+	InSignalAttributes_StructTypeDef DIP_SWITCH_3_IN_signal;
 
 } DIPSwitch_TypeDef;
 
@@ -244,26 +166,22 @@ typedef struct
 
 DeviceState_EnumTypeDef device_current_state;
 ErrorCode_EnumTypeDef error_code;
-Motor_TypeDef motor;
 GridSensor_TypeDef grid_sensor;
-ButtonAttributes_TypeDef grid_supply_button;
-InSignalAttributes_TypeDef ON_TOMO_IN_signal;
-InSignalAttributes_TypeDef BUCKY_CALL_IN_signal;
+ButtonAttributes_StructTypeDef grid_supply_button;
+InSignalAttributes_StructTypeDef ON_TOMO_IN_signal;
+InSignalAttributes_StructTypeDef BUCKY_CALL_IN_signal;
 OnTomoSignalFlag_EnumTypeDef ON_TOMO_IN_flag;
 uint8_t bucky_ready_delay_counter;
-ButtonAttributes_TypeDef pushbutton_buckybrake;
-LimitSwitch_TypeDef limit_switch;
+ButtonAttributes_StructTypeDef pushbutton_buckybrake;
 DIPSwitch_TypeDef DIP_switch;
-int64_t ticks_before_next_step_counter;
-uint64_t ticks_since_start_movement_counter;
-uint32_t step_impulses_for_acceleration_counter;
-uint32_t step_impulses_since_start_movement_counter;
-uint64_t ticks_for_acceleration_counter;
-uint64_t speed_mks_per_step_impulse;
-uint32_t max_speed_mks_per_step_impulse;
-uint32_t acceleration_time_ms;
-int32_t linear_acceleration_coefficient;
-int32_t quadratic_acceleration_coefficient;
+MotorMovementPurpose_EnumTypeDef motor_movement_purpose;
+MotorMovementStatus_EnumTypeDef motor_movement_status;
+OnTomoMovementDirectionFlag_EnumTypeDef exposition_movement_direction;
+
+MotorObject_StructTypeDef motor_instance_1;
+MotorMovementProfile_StructTypeDef movement_profile_1_default;
+MotorMovementProfile_StructTypeDef movement_profile_2_exposition;
+
 
 /*
 ********************************************************************************
@@ -273,74 +191,28 @@ int32_t quadratic_acceleration_coefficient;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 
-/*
-********************************************************************************
-*								GLOBAL FUNCTION PROTOTYPES
-********************************************************************************
-*/
-
-
-/*
-***************************************
-*   Функции управления модулем Bucky
-***************************************
-*/
 
 void device_init(void);
 void pins_init(void);
 void device_modules_init(void);
 void check_input_signals(void);
 void dip_switch_state_update(void);
-void calculate_acceleration_coefficient(void);
 void input_signals_state_update(void);
 void output_signals_state_init(SignalLogicLevel_EnumTypeDef signal_level_to_set);
 void signals_check_timer_interrupts_start(void);
 void signals_check_timer_interrupt_handler(void);
 void buttons_state_update(void);
 void enable_pin_set(void);
-void check_input_signal_state(InSignalAttributes_TypeDef* signal_to_check);
-void check_and_update_button_state(ButtonAttributes_TypeDef* button_to_check);
-void set_output_signal_state(GPIO_TypeDef* GPIO_port_pointer, uint16_t pin_number, SignalLogicLevel_EnumTypeDef requied_logic_level);
-void device_error_check(void);
+void device_error_check(MotorObject_StructTypeDef* motor_object);
 void device_error_handler(void);
 void read_input_signals_and_set_device_state(void);
-void bucky_ready_response_set(SignalLogicLevel_EnumTypeDef);
+void bucky_ready_response_set(SignalLogicLevel_EnumTypeDef logic_level_to_set);
 void dip_switch_value_decode(void);
 void bucky_ready_response_delay_check(void);
-
-/*
-***************************************
-*   Функции мотора
-***************************************
-*/
-
-void check_limit_switch_and_make_step(void);
-void motor_movement_start(void);
-void reset_movement_counters(void);
-int64_t movement_time_function(uint64_t ticks_value);
-void calculate_ticks_per_next_step(void);
-void motor_check_conditions_and_step(void);
-void motor_make_one_step(void);
-void motor_make_step_to_direction(MotorMoveDirection_EnumTypeDef move_direction);
-void cyclic_movement_step(void);
-void motor_direction_pin_set(void);
-void step_toggle(void);
-
-/*
-***************************************
-*   Функции концевика
-***************************************
-*/
-_Bool limit_switch_return_state(void);
-
-/*
-***************************************
-*   Функции таймера
-***************************************
-*/
-
 void motor_timer_interrupts_start(void);
 void motor_timer_interrupts_stop(void);
+void motor_movement_start(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile);
+void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile);
 void motor_timer_interrupt_handler(void);
 
 #endif /* INC_USER_FILE_11_H_ */
