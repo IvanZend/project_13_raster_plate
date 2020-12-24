@@ -581,7 +581,7 @@ void read_input_signals_and_set_device_state(void)
 	}
 	case DEVICE_RETURN_TO_INITIAL_STATE:
 	{
-		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 	// если статус мотора "движение завершено"
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 			// если статус мотора "движение завершено"
 		{
 			device_current_state = DEVICE_STANDBY;						// выставляем состояние устройства: "режим ожидания"
 		}
@@ -589,7 +589,7 @@ void read_input_signals_and_set_device_state(void)
 	}
 	case DEVICE_SCANING_TOMO_OFF:
 	{
-		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 	// если статус мотора "движение завершено"
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 			// если статус мотора "движение завершено"
 		{
 			device_current_state = DEVICE_STANDBY;						// выставляем состояние устройства: "режим ожидания"
 		}
@@ -597,7 +597,7 @@ void read_input_signals_and_set_device_state(void)
 	}
 	case DEVICE_SCANING_TOMO_ON:
 	{
-		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED)	// если статус мотора "движение завершено"
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED)			// если статус мотора "движение завершено"
 		{
 			device_current_state = DEVICE_STANDBY;						// выставляем состояние устройства: "режим ожидания"
 		}
@@ -642,7 +642,7 @@ void motor_movement_start(MotorObject_StructTypeDef* motor_object, MotorMovement
 		dip_switch_state_update();
 	}
 	motor_movement_init(motor_object, movement_profile);
-	motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;			// выставляем флаг, что мотор находится в движении
+	motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;					// выставляем флаг, что мотор находится в движении
 	motor_timer_interrupts_start();										// запускаем прерывания, по которым мотор будет шагать
 }
 
@@ -652,8 +652,7 @@ void motor_movement_start(MotorObject_StructTypeDef* motor_object, MotorMovement
 void motor_movement_complete(void)
 {
 	motor_timer_interrupts_stop();										// останавливаем прерывания, по которым шагает мотор
-	motor_movement_status = MOTOR_MOVEMENT_COMPLETED;				// выставляем флаг, что движение завершено
-	//reset_movement_counters(&motor_instance_1);
+	motor_movement_status = MOTOR_MOVEMENT_COMPLETED;					// выставляем флаг, что движение завершено
 }
 
 
@@ -686,7 +685,7 @@ void bucky_ready_response_set(SignalLogicLevel_EnumTypeDef logic_level_to_set)
  */
 void bucky_ready_response_delay_check(void)
 {
-	if (bucky_ready_delay_counter == BUCKY_READY_DELAY_STEP_IMPULSES)									// если прошли достаточное количество шагов
+	if (bucky_ready_delay_counter == BUCKY_READY_DELAY_STEP_IMPULSES)							// если прошли достаточное количество шагов
 	{
 		set_output_signal_state(BUCKY_READY_OUT_PORT, BUCKY_READY_OUT_PIN, LOGIC_LEVEL_HIGH);	// выставляем сигнал BUCKY_READY в "1"
 	}
@@ -738,7 +737,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 	}
 	case MOTOR_PURPOSE_EXPOSITION_TOMO_OFF:												// если назначение движения - экспозиция без сигнала ON_TOMO
 	{
-		if (BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)				// если сигнал BUCKY_CALL в "1"
+		if (BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)					// если сигнал BUCKY_CALL в "1"
 		{
 			cyclic_movement_step(&motor_instance_1, &movement_profile_2_exposition);														// делаем шаг
 			bucky_ready_response_set(LOGIC_LEVEL_HIGH);									// запускаем счётчик шагов до выставления сигнала BUCKY_READY
@@ -746,7 +745,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 		else
 		{
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// иначе выключаем сигнал BUCKY_READY
-			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
+			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;				// выставляем назначение движения - двигаться в начальное положение
 		}
 		break;
 	}
@@ -769,7 +768,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 			(ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 		{
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// выключаем сигнал BUCKY_READY
-			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
+			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;				// выставляем назначение движения - двигаться в начальное положение
 		}
 		// если сигнал BUCKY_CALL выключен, и сигнал ON_TOMO был включён и выключен, и сигнал ON_TOMO сейчас выключен
 		if ((BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
@@ -779,15 +778,15 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 			device_current_state = DEVICE_ERROR;										// переключаем устройство в состояние ошибки
 			error_code = ON_TOMO_BUCKY_CALL_ERROR;										// выставляем ошибку (BUCKY_CALL выключился прежде, чем ON_TOMO включился повторно)
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// выключаем сигнал BUCKY_READY
-			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
+			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;				// выставляем назначение движения - двигаться в начальное положение
 		}
 		break;
 	}
 	case MOTOR_PURPOSE_TAKE_INITIAL_POSITION:											// если назначение движения - вернуться в начальную позицию
 	{
-		if(!(limit_switch_return_state(&motor_instance_1)))												// если концевик не активен
+		if(!(limit_switch_return_state(&motor_instance_1)))								// если концевик не активен
 		{
-			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);							// делаем шаг в направлении начального положения
+			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);		// делаем шаг в направлении начального положения
 		}
 		else
 		{

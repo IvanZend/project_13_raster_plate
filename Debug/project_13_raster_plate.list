@@ -4549,7 +4549,7 @@ void read_input_signals_and_set_device_state(void)
 	}
 	case DEVICE_RETURN_TO_INITIAL_STATE:
 	{
-		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 	// если статус мотора "движение завершено"
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 			// если статус мотора "движение завершено"
  80020d4:	4b1d      	ldr	r3, [pc, #116]	; (800214c <read_input_signals_and_set_device_state+0x2cc>)
  80020d6:	781b      	ldrb	r3, [r3, #0]
  80020d8:	2b01      	cmp	r3, #1
@@ -4565,7 +4565,7 @@ void read_input_signals_and_set_device_state(void)
 	}
 	case DEVICE_SCANING_TOMO_OFF:
 	{
-		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 	// если статус мотора "движение завершено"
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 			// если статус мотора "движение завершено"
  80020e4:	4b19      	ldr	r3, [pc, #100]	; (800214c <read_input_signals_and_set_device_state+0x2cc>)
  80020e6:	781b      	ldrb	r3, [r3, #0]
  80020e8:	2b01      	cmp	r3, #1
@@ -4581,7 +4581,7 @@ void read_input_signals_and_set_device_state(void)
 	}
 	case DEVICE_SCANING_TOMO_ON:
 	{
-		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED)	// если статус мотора "движение завершено"
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED)			// если статус мотора "движение завершено"
  80020f4:	4b15      	ldr	r3, [pc, #84]	; (800214c <read_input_signals_and_set_device_state+0x2cc>)
  80020f6:	781b      	ldrb	r3, [r3, #0]
  80020f8:	2b01      	cmp	r3, #1
@@ -4707,7 +4707,7 @@ void motor_movement_start(MotorObject_StructTypeDef* motor_object, MotorMovement
  80021a8:	6839      	ldr	r1, [r7, #0]
  80021aa:	6878      	ldr	r0, [r7, #4]
  80021ac:	f7ff f89a 	bl	80012e4 <motor_movement_init>
-	motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;			// выставляем флаг, что мотор находится в движении
+	motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;					// выставляем флаг, что мотор находится в движении
  80021b0:	4b07      	ldr	r3, [pc, #28]	; (80021d0 <motor_movement_start+0x54>)
  80021b2:	2200      	movs	r2, #0
  80021b4:	701a      	strb	r2, [r3, #0]
@@ -4735,11 +4735,10 @@ void motor_movement_complete(void)
  80021d6:	af00      	add	r7, sp, #0
 	motor_timer_interrupts_stop();										// останавливаем прерывания, по которым шагает мотор
  80021d8:	f7ff ffc6 	bl	8002168 <motor_timer_interrupts_stop>
-	motor_movement_status = MOTOR_MOVEMENT_COMPLETED;				// выставляем флаг, что движение завершено
+	motor_movement_status = MOTOR_MOVEMENT_COMPLETED;					// выставляем флаг, что движение завершено
  80021dc:	4b02      	ldr	r3, [pc, #8]	; (80021e8 <motor_movement_complete+0x14>)
  80021de:	2201      	movs	r2, #1
  80021e0:	701a      	strb	r2, [r3, #0]
-	//reset_movement_counters(&motor_instance_1);
 }
  80021e2:	bf00      	nop
  80021e4:	bd80      	pop	{r7, pc}
@@ -4904,7 +4903,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 	}
 	case MOTOR_PURPOSE_EXPOSITION_TOMO_OFF:												// если назначение движения - экспозиция без сигнала ON_TOMO
 	{
-		if (BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)				// если сигнал BUCKY_CALL в "1"
+		if (BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)					// если сигнал BUCKY_CALL в "1"
  80022c2:	4b39      	ldr	r3, [pc, #228]	; (80023a8 <motor_check_conditions_and_step+0x170>)
  80022c4:	7a1b      	ldrb	r3, [r3, #8]
  80022c6:	2b00      	cmp	r3, #0
@@ -4920,14 +4919,14 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 		else
 		{
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// иначе выключаем сигнал BUCKY_READY
-			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
+			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;				// выставляем назначение движения - двигаться в начальное положение
 		}
 		break;
  80022d8:	e05a      	b.n	8002390 <motor_check_conditions_and_step+0x158>
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// иначе выключаем сигнал BUCKY_READY
  80022da:	2000      	movs	r0, #0
  80022dc:	f7ff ff86 	bl	80021ec <bucky_ready_response_set>
-			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
+			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;				// выставляем назначение движения - двигаться в начальное положение
  80022e0:	4b2d      	ldr	r3, [pc, #180]	; (8002398 <motor_check_conditions_and_step+0x160>)
  80022e2:	2200      	movs	r2, #0
  80022e4:	701a      	strb	r2, [r3, #0]
@@ -4985,7 +4984,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// выключаем сигнал BUCKY_READY
  8002324:	2000      	movs	r0, #0
  8002326:	f7ff ff61 	bl	80021ec <bucky_ready_response_set>
-			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
+			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;				// выставляем назначение движения - двигаться в начальное положение
  800232a:	4b1b      	ldr	r3, [pc, #108]	; (8002398 <motor_check_conditions_and_step+0x160>)
  800232c:	2200      	movs	r2, #0
  800232e:	701a      	strb	r2, [r3, #0]
@@ -5020,7 +5019,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 			bucky_ready_response_set(LOGIC_LEVEL_LOW);									// выключаем сигнал BUCKY_READY
  8002354:	2000      	movs	r0, #0
  8002356:	f7ff ff49 	bl	80021ec <bucky_ready_response_set>
-			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;			// выставляем назначение движения - двигаться в начальное положение
+			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;				// выставляем назначение движения - двигаться в начальное положение
  800235a:	4b0f      	ldr	r3, [pc, #60]	; (8002398 <motor_check_conditions_and_step+0x160>)
  800235c:	2200      	movs	r2, #0
  800235e:	701a      	strb	r2, [r3, #0]
@@ -5030,7 +5029,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 	}
 	case MOTOR_PURPOSE_TAKE_INITIAL_POSITION:											// если назначение движения - вернуться в начальную позицию
 	{
-		if(!(limit_switch_return_state(&motor_instance_1)))												// если концевик не активен
+		if(!(limit_switch_return_state(&motor_instance_1)))								// если концевик не активен
  8002362:	480e      	ldr	r0, [pc, #56]	; (800239c <motor_check_conditions_and_step+0x164>)
  8002364:	f7ff fa40 	bl	80017e8 <limit_switch_return_state>
  8002368:	4603      	mov	r3, r0
@@ -5039,7 +5038,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
  8002370:	2b00      	cmp	r3, #0
  8002372:	d005      	beq.n	8002380 <motor_check_conditions_and_step+0x148>
 		{
-			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);							// делаем шаг в направлении начального положения
+			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);		// делаем шаг в направлении начального положения
  8002374:	2200      	movs	r2, #0
  8002376:	490a      	ldr	r1, [pc, #40]	; (80023a0 <motor_check_conditions_and_step+0x168>)
  8002378:	4808      	ldr	r0, [pc, #32]	; (800239c <motor_check_conditions_and_step+0x164>)
