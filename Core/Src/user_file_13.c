@@ -34,13 +34,8 @@
 #define EXPOSITION_MAX_DISTANCE_STEP_IMPULSES		900			// крайнее положение растра при экспозиции без ТОМО
 #define EMERGENCY_STEP_IMPULSES_TO_LIMIT			10000		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
 <<<<<<< HEAD
-<<<<<<< HEAD
 #define BUTTON_BOUNCE_FILTER_COUNTS					0			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
 #define BUTTON_LONG_PRESS_DURATION_SEC				1			// количество миллисекунд, после которого фиксируем долгое нажатие кнопки
-=======
-#define BUTTON_BOUNCE_FILTER_COUNTS					5			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
-#define BUTTON_LONG_PRESS_DURATION_SEC				2			// количество миллисекунд, после которого фиксируем долгое нажатие кнопки
->>>>>>> parent of f862d73 (int)
 =======
 #define BUTTON_BOUNCE_FILTER_COUNTS					5			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
 #define BUTTON_LONG_PRESS_DURATION_SEC				2			// количество миллисекунд, после которого фиксируем долгое нажатие кнопки
@@ -126,7 +121,6 @@
 void device_init(void)
 {
 <<<<<<< HEAD
-<<<<<<< HEAD
 	device_current_state = DEVICE_STARTS;						// выставляем состояние устройства: устройство стартует
 	input_pins_init();											// инициализируем сигналы (указываем пины и порты, инициализируем единый массив сигналов)
 	output_signals_state_init(LOGIC_LEVEL_HIGH);				// выставляем состояние выходных сигналов
@@ -141,8 +135,6 @@ void device_init(void)
 	error_code = NO_ERROR;										// выставляем отсутствие ошибки
 	signals_check_timer_interrupts_start();						// запускаем таймер считывания состояний сигналов
 =======
-=======
->>>>>>> parent of f862d73 (int)
 	device_current_state = DEVICE_STARTS;										// выставляем состояние устройства: устройство стартует
 	pins_init();																// инициализируем сигналы (указываем пины и порты, инициализируем единый массив сигналов)
 	output_signals_state_init(LOGIC_LEVEL_HIGH);									// выставляем состояние выходных сигналов
@@ -152,9 +144,6 @@ void device_init(void)
 	enable_pin_set();															// навсегда выставляем "1" на входе ШД "Enable"
 	error_code = NO_ERROR;														// выставляем отсутствие ошибки
 	signals_check_timer_interrupts_start();										// запускаем таймер считывания состояний сигналов
-<<<<<<< HEAD
->>>>>>> parent of f862d73 (int)
-=======
 >>>>>>> parent of f862d73 (int)
 }
 
@@ -532,9 +521,6 @@ void read_input_signals_and_set_device_state(void)
 =======
 				motor_movement_purpose = MOTOR_PURPOSE_GRID_EXTRACTION;						// назначение движения: извлечь растр
 				motor_movement_start(&motor_instance_1, &movement_profile_1_default);																// начинаем движение
-<<<<<<< HEAD
->>>>>>> parent of f862d73 (int)
-=======
 >>>>>>> parent of f862d73 (int)
 			}
 		}
@@ -668,7 +654,6 @@ void read_input_signals_and_set_device_state(void)
 }
 
 <<<<<<< HEAD
-<<<<<<< HEAD
 void set_grid_out_signal(void)
 {
 	/*
@@ -704,8 +689,6 @@ void buckybreak_laser_disable(void)
 	set_output_signal_state(BUCKYBRAKE_OUT_PORT, BUCKYBRAKE_OUT_PIN, LOGIC_LEVEL_LOW);
 }
 
-=======
->>>>>>> parent of f862d73 (int)
 =======
 >>>>>>> parent of f862d73 (int)
 /*
