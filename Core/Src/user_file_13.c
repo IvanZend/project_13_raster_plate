@@ -554,6 +554,12 @@ void read_input_signals_and_set_device_state(void)
 		}
 		break;
 	}
+	/*
+	case DEVICE_SCANING_TOMO_ON:
+	{
+
+	}
+	*/
 	default:
 	{
 		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED)			// если статус мотора "движение завершено"
@@ -570,7 +576,7 @@ void set_grid_out_signal(void)
 	/*
 	 * если растр не представлен
 	 */
-	if ((grid_sensor.GRID_120_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)&& \
+	if ((grid_sensor.GRID_120_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
 			(grid_sensor.GRID_180_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 	{
 		set_output_signal_state(GRID_120_OUT_PORT, GRID_120_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_120
@@ -751,19 +757,18 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 					(ON_TOMO_IN_flag != ON_TOMO_WAS_ENABLED_AND_DISABLED))				// если сигнал ON_TOMO в "0"
 			{
 				ON_TOMO_IN_flag = ON_TOMO_WAS_ENABLED_AND_DISABLED;						// выставляем флаг, что ON_TOMO был в "1", а затем в "0"
-				bucky_ready_delay_set();											// запускаем счётчик шагов до выставления сигнала BUCKY_READY
+				set_output_signal_state(BUCKY_READY_OUT_PORT, BUCKY_READY_OUT_PIN, LOGIC_LEVEL_HIGH);
 			}
 			// если сигнал ON_TOMO был включён и выключен, и сигнал ON_TOMO включён
 			if ((ON_TOMO_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && (ON_TOMO_IN_flag == ON_TOMO_WAS_ENABLED_AND_DISABLED))
 			{
-				if (bucky_ready_delay_counter != 0)
-				{
-					bucky_ready_dsable();
-				}
+				ON_TOMO_IN_flag = ON_TOMO_WAS_NOT_ENABLED;
+				set_output_signal_state(BUCKY_READY_OUT_PORT, BUCKY_READY_OUT_PIN, LOGIC_LEVEL_LOW);
 			}
 		}
 		else
 		{
+			set_output_signal_state(BUCKY_READY_OUT_PORT, BUCKY_READY_OUT_PIN, LOGIC_LEVEL_LOW);
 			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;				// выставляем назначение движения - двигаться в начальное положение
 		}
 		break;
