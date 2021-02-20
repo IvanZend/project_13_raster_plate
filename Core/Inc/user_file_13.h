@@ -183,7 +183,7 @@ OnTomoMovementDirectionFlag_EnumTypeDef exposition_movement_direction;
 MotorObject_StructTypeDef motor_instance_1;
 MotorMovementProfile_StructTypeDef movement_profile_1_default;
 MotorMovementProfile_StructTypeDef movement_profile_2_exposition;
-
+MotorMovementProfile_StructTypeDef movement_profile_3_supply;
 
 /*
 ********************************************************************************
@@ -207,14 +207,10 @@ void enable_pin_set(void);
 void device_error_check(MotorObject_StructTypeDef* motor_object);
 void device_error_handler(void);
 void read_input_signals_and_set_device_state(void);
-<<<<<<< HEAD
 void set_grid_out_signal(void);
 void buckybreak_laser_disable(void);
 void bucky_ready_delay_set(void);
 void bucky_ready_dsable(void);
-=======
-void bucky_ready_response_set(SignalLogicLevel_EnumTypeDef logic_level_to_set);
->>>>>>> parent of f862d73 (int)
 void dip_switch_value_decode(void);
 void motor_timer_interrupts_start(void);
 void motor_timer_interrupts_stop(void);
