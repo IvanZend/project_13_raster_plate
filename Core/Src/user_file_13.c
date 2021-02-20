@@ -27,33 +27,46 @@
 ********************************************************************************
 */
 
-#define FRONTS_PER_STEP								2
 #define DIR_PIN_LOGIC_LEVEL_INVERTED				1			// инвертирован ли логический уровень направления (зависит от аппаратной конфигурации драйвера)
 #define ENABLE_PIN_LOGIC_LEVEL_INVERTED				1
 #define LIMIT_SWITCH_LOGIC_LEVEL_INVERTED			1			// если концевик при размокнутом состоянии выдаёт "1", выставляем флаг инверсии
-#define RASTER_SUPPLY_DISTANCE_STEP_IMPULSES		1937		// расстояние от концевика, на которое растр выдвигается для подачи
+#define RASTER_SUPPLY_DISTANCE_STEP_IMPULSES		1000		// расстояние от концевика, на которое растр выдвигается для подачи
+#define EXPOSITION_MAX_DISTANCE_STEP_IMPULSES		900			// крайнее положение растра при экспозиции без ТОМО
 #define EMERGENCY_STEP_IMPULSES_TO_LIMIT			10000		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
+<<<<<<< HEAD
 #define BUTTON_BOUNCE_FILTER_COUNTS					0			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
 #define BUTTON_LONG_PRESS_DURATION_SEC				1			// количество миллисекунд, после которого фиксируем долгое нажатие кнопки
+=======
+#define BUTTON_BOUNCE_FILTER_COUNTS					5			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
+#define BUTTON_LONG_PRESS_DURATION_SEC				2			// количество миллисекунд, после которого фиксируем долгое нажатие кнопки
+>>>>>>> parent of f862d73 (int)
 #define BUCKY_READY_DELAY_STEP_IMPULSES				3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
 #define SIGNALS_CHECK_TIMER_TICKS_PER_SEC			10
 #define MOTOR_TIMER_TICKS_PER_MS					200
 #define STEP_IMPULSES_DISTANCE_INITIAL				1
 #define SHORT_DISTANCE_STEP_IMPULSES		 		0 	//100
 #define FAR_DISTANCE_STEP_IMPULSES 					1826 + SHORT_DISTANCE_STEP_IMPULSES
-#define CONSTANT_SPEED_STEP_PER_MS					1.325 * FRONTS_PER_STEP
-#define RASTER_SUPPLY_SPEED_STEP_PER_MS				1.985 * FRONTS_PER_STEP
-#define MIN_SPEED_STEP_PER_MS_ALL_MODES 			1.569 * FRONTS_PER_STEP
-#define MAX_SPEED_STEP_PER_MS_MODE_00		 		4.535 * FRONTS_PER_STEP
-#define MAX_SPEED_STEP_PER_MS_MODE_01		 		3.969 * FRONTS_PER_STEP
-#define MAX_SPEED_STEP_PER_MS_MODE_10		 		5.003 * FRONTS_PER_STEP
-#define MAX_SPEED_STEP_PER_MS_MODE_11		 		7.129 * FRONTS_PER_STEP
+#define CONSTANT_SPEED_STEP_PER_MS					2.809
+#define MIN_SPEED_STEP_PER_MS_ALL_MODES 			3.138
+#define MAX_SPEED_STEP_PER_MS_MODE_00		 		9.07
+#define MAX_SPEED_STEP_PER_MS_MODE_01		 		7.937
+#define MAX_SPEED_STEP_PER_MS_MODE_10		 		10.006
+#define MAX_SPEED_STEP_PER_MS_MODE_11		 		14.257
 #define ACCELERATION_DURATION_MS_MODE_00			40
 #define ACCELERATION_DURATION_MS_MODE_01			32
 #define ACCELERATION_DURATION_MS_MODE_10			43
 #define ACCELERATION_DURATION_MS_MODE_11			52
 #define LINEAR_ACCELERATION_COEFFICIENT_INITIAL 	0
 #define QUADRATIC_ACCELERATION_COEFFICIENT_INITIAL 	0
+
+/*
+#define CONSTANT_SPEED_MKS_PER_STEP					400			//  !!! уточнить экспериментально
+#define MIN_SPEED_MKS_PER_STEP_IMPULSE_ALL_MODES	319
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_00		107
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_01		126
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_10		94
+#define MAX_SPEED_MKS_PER_STEP_IMPULSE_MODE_11		63
+*/
 
 
 /*
@@ -107,6 +120,7 @@
 
 void device_init(void)
 {
+<<<<<<< HEAD
 	device_current_state = DEVICE_STARTS;						// выставляем состояние устройства: устройство стартует
 	input_pins_init();											// инициализируем сигналы (указываем пины и порты, инициализируем единый массив сигналов)
 	output_signals_state_init(LOGIC_LEVEL_HIGH);				// выставляем состояние выходных сигналов
@@ -120,11 +134,19 @@ void device_init(void)
 	enable_pin_set();											// навсегда выставляем "1" на входе ШД "Enable"
 	error_code = NO_ERROR;										// выставляем отсутствие ошибки
 	signals_check_timer_interrupts_start();						// запускаем таймер считывания состояний сигналов
+=======
+	device_current_state = DEVICE_STARTS;										// выставляем состояние устройства: устройство стартует
+	pins_init();																// инициализируем сигналы (указываем пины и порты, инициализируем единый массив сигналов)
+	output_signals_state_init(LOGIC_LEVEL_HIGH);									// выставляем состояние выходных сигналов
+	input_signals_state_update();												// считываем состояние входных сигналов
+	device_modules_init();														// инициализируем аппаратные модули (кнопки, датчики, мотор, интерфейс А1, DIP-переключатели)
+	buttons_state_update();														// обновляем состояние аппаратных модулей
+	enable_pin_set();															// навсегда выставляем "1" на входе ШД "Enable"
+	error_code = NO_ERROR;														// выставляем отсутствие ошибки
+	signals_check_timer_interrupts_start();										// запускаем таймер считывания состояний сигналов
+>>>>>>> parent of f862d73 (int)
 }
 
-/*
- *
- */
 void enable_pin_set(void)
 {
 	if (ENABLE_PIN_LOGIC_LEVEL_INVERTED)
@@ -231,15 +253,6 @@ void device_modules_init(void)
 	movement_profile_2_exposition.linear_acceleration_coefficient = LINEAR_ACCELERATION_COEFFICIENT_INITIAL;
 	movement_profile_2_exposition.quadratic_acceleration_coefficient = QUADRATIC_ACCELERATION_COEFFICIENT_INITIAL;
 	movement_profile_2_exposition.acceleration_duration_ms = ACCELERATION_DURATION_MS_MODE_00;
-
-	movement_profile_3_supply.acceleration_type = NO_ACCELERATION;
-	movement_profile_3_supply.short_distance_step_impulses = SHORT_DISTANCE_STEP_IMPULSES;
-	movement_profile_3_supply.far_distance_step_impulses = RASTER_SUPPLY_DISTANCE_STEP_IMPULSES;
-	movement_profile_3_supply.min_speed_step_per_ms = RASTER_SUPPLY_SPEED_STEP_PER_MS;
-	movement_profile_3_supply.max_speed_step_per_ms = RASTER_SUPPLY_SPEED_STEP_PER_MS;
-	movement_profile_3_supply.linear_acceleration_coefficient = LINEAR_ACCELERATION_COEFFICIENT_INITIAL;
-	movement_profile_3_supply.quadratic_acceleration_coefficient = QUADRATIC_ACCELERATION_COEFFICIENT_INITIAL;
-	movement_profile_3_supply.acceleration_duration_ms = ACCELERATION_DURATION_MS_MODE_00;
 }
 
 /*
@@ -249,7 +262,7 @@ void check_input_signals(void)
 {
 	input_signals_state_update();					// считываем состояние входов, обновляем их состояние в объекте устройства
 	buttons_state_update();							// обновляем состояние аппаратных модулей
-	device_error_check(&motor_instance_1);			// проверяем текущее состояние устройства на наличие ошибок
+	device_error_check(&motor_instance_1);							// проверяем текущее состояние устройства на наличие ошибок
 	read_input_signals_and_set_device_state();		// изменяем состояние устройства в зависимости от входных сигналов
 }
 
@@ -472,7 +485,6 @@ void read_input_signals_and_set_device_state(void)
 	}
 	case DEVICE_STANDBY:															// если устройство в режиме ожидания
 	{
-		set_grid_out_signal();
 		/*
 		 * если сигнал ON_TOMO не активен и сигнал ON_TOMO был активен ранее
 		 */
@@ -494,7 +506,7 @@ void read_input_signals_and_set_device_state(void)
 			if (motor_instance_1.step_impulses_distance_from_limit_switch >= RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)
 			{
 				motor_movement_purpose = MOTOR_PURPOSE_GRID_INSERTION;						// назначение движения: вставить растр
-				motor_movement_start(&motor_instance_1, &movement_profile_3_supply);																// начинаем движение
+				motor_movement_start(&motor_instance_1, &movement_profile_1_default);																// начинаем движение
 			}
 			/*
 			 * если растр был вставлен и кнопка подачи растра нажата долго
@@ -503,8 +515,13 @@ void read_input_signals_and_set_device_state(void)
 			{
 				set_output_signal_state(GRID_120_OUT_PORT, GRID_120_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_120
 				set_output_signal_state(GRID_180_OUT_PORT, GRID_180_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_180
+<<<<<<< HEAD
 				motor_movement_purpose = MOTOR_PURPOSE_GRID_EXTRACTION;								// назначение движения: извлечь растр
 				motor_movement_start(&motor_instance_1, &movement_profile_3_supply);				// начинаем движение
+=======
+				motor_movement_purpose = MOTOR_PURPOSE_GRID_EXTRACTION;						// назначение движения: извлечь растр
+				motor_movement_start(&motor_instance_1, &movement_profile_1_default);																// начинаем движение
+>>>>>>> parent of f862d73 (int)
 			}
 		}
 		/*
@@ -543,7 +560,7 @@ void read_input_signals_and_set_device_state(void)
 		/*
 		 * иначе если кнопка тормоза кассетоприёмника нажата
 		 */
-		else if (pushbutton_buckybrake.button_current_state != BUTTON_RELEASED)
+		else if (pushbutton_buckybrake.button_current_state == BUTTON_SHORT_PRESS)
 		{
 			device_current_state = DEVICE_BUCKYBRAKE;												// выставляем состояние устройства: отпустить тормоз кассетоприёмника
 			set_output_signal_state(LASER_CENTERING_OUT_PORT, LASER_CENTERING_OUT_PIN, LOGIC_LEVEL_HIGH);	// выставляем в "1" выходной сигнал LASER_CENTERING
@@ -563,7 +580,69 @@ void read_input_signals_and_set_device_state(void)
 		}
 		break;
 	}
+<<<<<<< HEAD
 	default:
+=======
+	case DEVICE_GRID_SUPPLY:																		// если устройство в состоянии "подача растра"
+	{
+		/*
+		 * если назначение движения "вставить растр" и статус движения "движение завершено"
+		 */
+		if ((motor_movement_purpose == MOTOR_PURPOSE_GRID_INSERTION) && \
+			(motor_movement_status == MOTOR_MOVEMENT_COMPLETED))
+		{
+			/*
+			 * если растр не представлен
+			 */
+			if ((grid_sensor.GRID_120_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)&& \
+					(grid_sensor.GRID_180_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
+			{
+				set_output_signal_state(GRID_120_OUT_PORT, GRID_120_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_120
+				set_output_signal_state(GRID_180_OUT_PORT, GRID_180_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_180
+			}
+			/*
+			* если тип растра 120
+			*/
+			if (grid_sensor.GRID_120_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH)
+			{
+				set_output_signal_state(GRID_120_OUT_PORT, GRID_120_OUT_PIN, LOGIC_LEVEL_HIGH);		// выставляем в "1" выходной сигнал GRID_120
+				set_output_signal_state(GRID_180_OUT_PORT, GRID_180_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_180
+			}
+			/*
+			* если тип растра 180
+			*/
+			if (grid_sensor.GRID_180_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH)
+			{
+				set_output_signal_state(GRID_120_OUT_PORT, GRID_120_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_120
+				set_output_signal_state(GRID_180_OUT_PORT, GRID_180_OUT_PIN, LOGIC_LEVEL_HIGH);		// выставляем в "1" выходной сигнал GRID_180
+			}
+		}
+
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 	// если статус мотора "движение завершено"
+		{
+
+			device_current_state = DEVICE_STANDBY;						// выставляем состояние устройства: "режим ожидания"
+		}
+		break;
+	}
+	case DEVICE_RETURN_TO_INITIAL_STATE:
+	{
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 			// если статус мотора "движение завершено"
+		{
+			device_current_state = DEVICE_STANDBY;						// выставляем состояние устройства: "режим ожидания"
+		}
+		break;
+	}
+	case DEVICE_SCANING_TOMO_OFF:
+	{
+		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED) 			// если статус мотора "движение завершено"
+		{
+			device_current_state = DEVICE_STANDBY;						// выставляем состояние устройства: "режим ожидания"
+		}
+		break;
+	}
+	case DEVICE_SCANING_TOMO_ON:
+>>>>>>> parent of f862d73 (int)
 	{
 		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED)			// если статус мотора "движение завершено"
 		{
@@ -574,6 +653,7 @@ void read_input_signals_and_set_device_state(void)
 	}
 }
 
+<<<<<<< HEAD
 void set_grid_out_signal(void)
 {
 	/*
@@ -609,6 +689,8 @@ void buckybreak_laser_disable(void)
 	set_output_signal_state(BUCKYBRAKE_OUT_PORT, BUCKYBRAKE_OUT_PIN, LOGIC_LEVEL_LOW);
 }
 
+=======
+>>>>>>> parent of f862d73 (int)
 /*
 ***************************************
 *   Функции мотора
@@ -709,11 +791,10 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 	{
 		if (!(limit_switch_return_state(&motor_instance_1)))							// если концевик не активен
 		{
-			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_3_supply, MOVE_TO_COORD_ORIGIN);							// двигаемся к начальной точке
+			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);							// двигаемся к начальной точке
 		}
 		else
 		{
-			set_grid_out_signal();
 			if (grid_supply_button.button_current_state == BUTTON_RELEASED)				// иначе если кнопка подачи растра отпущена
 			{
 				motor_movement_complete();												// завершаем движение
@@ -725,7 +806,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 	{
 		if (motor_object->step_impulses_distance_from_limit_switch < RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)		// если мы не дошли до крайнего положения
 		{
-			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_3_supply, MOVE_TO_COORD_END);							// движемся от начальной точки (наружу)
+			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_END);							// движемся от начальной точки (наружу)
 		}
 		else
 		{
