@@ -63,7 +63,6 @@ typedef enum
 typedef enum
 {
 	DEVICE_STARTS,
-	DEVICE_INITIAL_MOVEMENT,
 	DEVICE_STANDBY,
 	DEVICE_GRID_SUPPLY,
 	DEVICE_BUCKYBRAKE,
@@ -78,7 +77,6 @@ typedef enum
 typedef enum
 {
 	MOTOR_PURPOSE_TAKE_INITIAL_POSITION,
-	MOTOR_PURPOSE_INITIAL_MOVEMENT,
 	MOTOR_PURPOSE_GRID_INSERTION,
 	MOTOR_PURPOSE_GRID_EXTRACTION,
 	MOTOR_PURPOSE_EXPOSITION_TOMO_OFF,
@@ -193,8 +191,9 @@ MotorMovementProfile_StructTypeDef movement_profile_3_supply;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim3;
 
+
 void device_init(void);
-void input_pins_init(void);
+void pins_init(void);
 void device_modules_init(void);
 void check_input_signals(void);
 void dip_switch_state_update(void);
@@ -208,10 +207,9 @@ void device_error_check(MotorObject_StructTypeDef* motor_object);
 void device_error_handler(void);
 void read_input_signals_and_set_device_state(void);
 void set_grid_out_signal(void);
-void buckybreak_laser_disable(void);
-void bucky_ready_delay_set(void);
-void bucky_ready_dsable(void);
+void bucky_ready_response_set(SignalLogicLevel_EnumTypeDef logic_level_to_set);
 void dip_switch_value_decode(void);
+void bucky_ready_response_delay_check(void);
 void motor_timer_interrupts_start(void);
 void motor_timer_interrupts_stop(void);
 void motor_movement_start(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile);
