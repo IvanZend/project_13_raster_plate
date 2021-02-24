@@ -205,6 +205,7 @@ void signals_check_timer_interrupts_start(void);
 void signals_check_timer_interrupt_handler(void);
 void buttons_state_update(void);
 void enable_pin_set(void);
+void enable_pin_clear(void);
 void device_error_check(MotorObject_StructTypeDef* motor_object);
 void device_error_handler(void);
 void read_input_signals_and_set_device_state(void);

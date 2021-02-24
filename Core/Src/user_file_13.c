@@ -117,7 +117,7 @@ void device_init(void)
 	buckybreak_laser_disable();									// выключаем сигнал buckybreak и лазер
 	dip_switch_state_update();									// проверка направления и скорости движения
 	bucky_ready_dsable();
-	enable_pin_set();											// навсегда выставляем "1" на входе ШД "Enable"
+	//enable_pin_set();											// навсегда выставляем "1" на входе ШД "Enable"
 	error_code = NO_ERROR;										// выставляем отсутствие ошибки
 	signals_check_timer_interrupts_start();						// запускаем таймер считывания состояний сигналов
 }
@@ -134,6 +134,18 @@ void enable_pin_set(void)
 	else
 	{
 		set_output_signal_state(MOTOR_ENABLE_OUT_PORT, MOTOR_ENABLE_OUT_PIN, LOGIC_LEVEL_HIGH);
+	}
+}
+
+void enable_pin_clear(void)
+{
+	if (ENABLE_PIN_LOGIC_LEVEL_INVERTED)
+	{
+		set_output_signal_state(MOTOR_ENABLE_OUT_PORT, MOTOR_ENABLE_OUT_PIN, LOGIC_LEVEL_HIGH);
+	}
+	else
+	{
+		set_output_signal_state(MOTOR_ENABLE_OUT_PORT, MOTOR_ENABLE_OUT_PIN, LOGIC_LEVEL_LOW);
 	}
 }
 
@@ -640,6 +652,7 @@ void motor_movement_start(MotorObject_StructTypeDef* motor_object, MotorMovement
 	}
 	else
 	{
+		enable_pin_set();
 		if ((motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_OFF) || (motor_movement_purpose == MOTOR_PURPOSE_EXPOSITION_TOMO_ON))
 		{
 			dip_switch_state_update();
@@ -656,6 +669,7 @@ void motor_movement_start(MotorObject_StructTypeDef* motor_object, MotorMovement
 void motor_movement_complete(void)
 {
 	motor_timer_interrupts_stop();										// останавливаем прерывания, по которым шагает мотор
+	enable_pin_clear();
 	motor_movement_status = MOTOR_MOVEMENT_COMPLETED;					// выставляем флаг, что движение завершено
 }
 
