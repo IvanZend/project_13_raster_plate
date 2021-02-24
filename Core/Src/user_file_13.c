@@ -456,7 +456,7 @@ void read_input_signals_and_set_device_state(void)
 	case DEVICE_STARTS:																// если устройство стартует
 	{
 		device_current_state = DEVICE_INITIAL_MOVEMENT;
-		if (limit_switch_return_state(&motor_instance_1))
+		if (limit_switch_active(&motor_instance_1))
 		{
 			motor_movement_purpose = MOTOR_PURPOSE_INITIAL_MOVEMENT;			// назначение движения: возврат в начальное положение
 		}
@@ -535,7 +535,7 @@ void read_input_signals_and_set_device_state(void)
 		/*
 		 * иначе если концевик неактивен и мы не в положении подачи растра
 		 */
-		else if ((!(limit_switch_return_state(&motor_instance_1))) && \
+		else if ((!(limit_switch_active(&motor_instance_1))) && \
 				(!(motor_instance_1.step_impulses_distance_from_limit_switch >= RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)))
 		{
 			device_current_state = DEVICE_RETURN_TO_INITIAL_STATE;									// выставляем состояние устройства: возврат в начальное положение
@@ -718,7 +718,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 	}
 	case MOTOR_PURPOSE_GRID_INSERTION:													// если назначение движения мотора - вставить растр
 	{
-		if (!(limit_switch_return_state(&motor_instance_1)))												// если концевик не активен
+		if (!(limit_switch_active(&motor_instance_1)))												// если концевик не активен
 		{
 			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_3_supply, MOVE_TO_COORD_ORIGIN);							// двигаемся к начальной точке
 		}
@@ -790,12 +790,13 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 	}
 	case MOTOR_PURPOSE_TAKE_INITIAL_POSITION:											// если назначение движения - вернуться в начальную позицию
 	{
-		if(!(limit_switch_return_state(&motor_instance_1)))								// если концевик не активен
+		if(!(limit_switch_active(&motor_instance_1)))								// если концевик не активен
 		{
 			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);		// делаем шаг в направлении начального положения
 		}
 		else
 		{
+			motor_object->limit_emergency_counter = 0;
 			motor_movement_complete();													// иначе завершаем движение
 		}
 		break;
