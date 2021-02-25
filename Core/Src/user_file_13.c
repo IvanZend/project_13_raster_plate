@@ -32,13 +32,14 @@
 #define ENABLE_PIN_LOGIC_LEVEL_INVERTED				1
 #define LIMIT_SWITCH_LOGIC_LEVEL_INVERTED			1			// если концевик при размокнутом состоянии выдаёт "1", выставляем флаг инверсии
 #define RASTER_SUPPLY_DISTANCE_STEP_IMPULSES		1937		// расстояние от концевика, на которое растр выдвигается для подачи
-#define EMERGENCY_STEP_IMPULSES_TO_LIMIT			10000		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
+#define EMERGENCY_STEP_IMPULSES_TO_LIMIT			4000		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
 #define BUTTON_BOUNCE_FILTER_COUNTS					0			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
 #define BUTTON_LONG_PRESS_DURATION_SEC				1			// количество миллисекунд, после которого фиксируем долгое нажатие кнопки
 #define BUCKY_READY_DELAY_STEP_IMPULSES				3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
 #define SIGNALS_CHECK_TIMER_TICKS_PER_SEC			10
 #define MOTOR_TIMER_TICKS_PER_MS					200
-#define STEP_IMPULSES_DISTANCE_INITIAL				1
+#define STEP_IMPULSES_ERROR_RATE					100
+#define STEP_IMPULSES_DISTANCE_INITIAL				EMERGENCY_STEP_IMPULSES_TO_LIMIT - STEP_IMPULSES_ERROR_RATE
 #define SHORT_DISTANCE_STEP_IMPULSES		 		0 	//100
 #define FAR_DISTANCE_STEP_IMPULSES 					1826 + SHORT_DISTANCE_STEP_IMPULSES
 #define CONSTANT_SPEED_STEP_PER_MS					1.325 * FRONTS_PER_STEP
@@ -458,6 +459,7 @@ void read_input_signals_and_set_device_state(void)
 		device_current_state = DEVICE_INITIAL_MOVEMENT;
 		if (limit_switch_active(&motor_instance_1))
 		{
+			motor_instance_1.step_impulses_distance_from_limit_switch = 0;
 			motor_movement_purpose = MOTOR_PURPOSE_INITIAL_MOVEMENT;			// назначение движения: возврат в начальное положение
 		}
 		else
@@ -535,6 +537,7 @@ void read_input_signals_and_set_device_state(void)
 		/*
 		 * иначе если концевик неактивен и мы не в положении подачи растра
 		 */
+		/*
 		else if ((!(limit_switch_active(&motor_instance_1))) && \
 				(!(motor_instance_1.step_impulses_distance_from_limit_switch >= RASTER_SUPPLY_DISTANCE_STEP_IMPULSES)))
 		{
@@ -542,6 +545,7 @@ void read_input_signals_and_set_device_state(void)
 			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;						// назначение движения: возврат в начальное положение
 			motor_movement_start(&motor_instance_1, &movement_profile_1_default);																	// начинаем движение
 		}
+		*/
 		/*
 		 * иначе если кнопка тормоза кассетоприёмника нажата
 		 */
@@ -566,12 +570,6 @@ void read_input_signals_and_set_device_state(void)
 		}
 		break;
 	}
-	/*
-	case DEVICE_SCANING_TOMO_ON:
-	{
-
-	}
-	*/
 	default:
 	{
 		if (motor_movement_status == MOTOR_MOVEMENT_COMPLETED)			// если статус мотора "движение завершено"
@@ -790,14 +788,21 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 	}
 	case MOTOR_PURPOSE_TAKE_INITIAL_POSITION:											// если назначение движения - вернуться в начальную позицию
 	{
-		if(!(limit_switch_active(&motor_instance_1)))								// если концевик не активен
+		//if(!(limit_switch_active(&motor_instance_1)))								// если концевик не активен
+		if ((motor_instance_1.step_impulses_distance_from_limit_switch + STEP_IMPULSES_ERROR_RATE) > 0)
 		{
 			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);		// делаем шаг в направлении начального положения
+			if (limit_switch_active(&motor_instance_1))
+			{
+				//motor_instance_1.step_impulses_distance_from_limit_switch = 0;
+				motor_instance_1.limit_emergency_counter = 0;
+				motor_movement_complete();
+			}
 		}
 		else
 		{
-			motor_object->limit_emergency_counter = 0;
-			motor_movement_complete();													// иначе завершаем движение
+			device_current_state = DEVICE_ERROR;
+			error_code = LIMIT_SWITCH_ERROR;
 		}
 		break;
 	}
@@ -811,4 +816,3 @@ void motor_timer_interrupt_handler(void)
 {
 	motor_check_conditions_and_step(&motor_instance_1,  &movement_profile_2_exposition);
 }
-
