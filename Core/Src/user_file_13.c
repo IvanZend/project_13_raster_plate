@@ -362,11 +362,9 @@ void buttons_state_update(void)
 	check_and_update_button_state(&pushbutton_buckybrake, SIGNALS_CHECK_TIMER_TICKS_PER_SEC);
 }
 
-
 /*
  * Проверка текущего состояния устройства на наличие ошибок
  */
-
 void device_error_check(MotorObject_StructTypeDef* motor_object)
 {
 	/*
@@ -552,7 +550,6 @@ void read_input_signals_and_set_device_state(void)
 		else if (pushbutton_buckybrake.button_current_state != BUTTON_RELEASED)
 		{
 			device_current_state = DEVICE_BUCKYBRAKE;												// выставляем состояние устройства: отпустить тормоз кассетоприёмника
-
 			set_output_signal_state(LASER_CENTERING_OUT_PORT, LASER_CENTERING_OUT_PIN, LOGIC_LEVEL_HIGH);	// выставляем в "1" выходной сигнал LASER_CENTERING
 			set_output_signal_state(BUCKYBRAKE_OUT_PORT, BUCKYBRAKE_OUT_PIN, LOGIC_LEVEL_HIGH);		// выставляем в "1" выходной сигнал BUCKYBRAKE
 		}
@@ -784,7 +781,6 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;				// выставляем назначение движения - двигаться в начальное положение
 		}
 		break;
-
 	}
 	case MOTOR_PURPOSE_TAKE_INITIAL_POSITION:											// если назначение движения - вернуться в начальную позицию
 	{

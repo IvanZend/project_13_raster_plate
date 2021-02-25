@@ -4018,10 +4018,10 @@ void buttons_state_update(void)
  8001dc8:	200001dc 	.word	0x200001dc
 
 08001dcc <device_error_check>:
+
 /*
  * Проверка текущего состояния устройства на наличие ошибок
  */
-
 void device_error_check(MotorObject_StructTypeDef* motor_object)
 {
  8001dcc:	b480      	push	{r7}
@@ -4398,8 +4398,8 @@ void read_input_signals_and_set_device_state(void)
  8001fea:	4936      	ldr	r1, [pc, #216]	; (80020c4 <read_input_signals_and_set_device_state+0x1b8>)
  8001fec:	482f      	ldr	r0, [pc, #188]	; (80020ac <read_input_signals_and_set_device_state+0x1a0>)
  8001fee:	f000 f8d3 	bl	8002198 <motor_movement_start>
+		{
 			device_current_state = DEVICE_BUCKYBRAKE;												// выставляем состояние устройства: отпустить тормоз кассетоприёмника
-
 			set_output_signal_state(LASER_CENTERING_OUT_PORT, LASER_CENTERING_OUT_PIN, LOGIC_LEVEL_HIGH);	// выставляем в "1" выходной сигнал LASER_CENTERING
 			set_output_signal_state(BUCKYBRAKE_OUT_PORT, BUCKYBRAKE_OUT_PIN, LOGIC_LEVEL_HIGH);		// выставляем в "1" выходной сигнал BUCKYBRAKE
 		}
@@ -5061,7 +5061,6 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
  80023a6:	701a      	strb	r2, [r3, #0]
 		break;
  80023a8:	e020      	b.n	80023ec <motor_check_conditions_and_step+0x180>
-
 	}
 	case MOTOR_PURPOSE_TAKE_INITIAL_POSITION:											// если назначение движения - вернуться в начальную позицию
 	{
