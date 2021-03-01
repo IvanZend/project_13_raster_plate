@@ -38,10 +38,10 @@
 #define BUCKY_READY_DELAY_STEP_IMPULSES				3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
 #define SIGNALS_CHECK_TIMER_TICKS_PER_SEC			10
 #define MOTOR_TIMER_TICKS_PER_MS					200
-#define STEP_IMPULSES_ERROR_RATE					100
-#define STEP_IMPULSES_DISTANCE_INITIAL				EMERGENCY_STEP_IMPULSES_TO_LIMIT - STEP_IMPULSES_ERROR_RATE
-#define SHORT_DISTANCE_STEP_IMPULSES		 		0 	//100
-#define FAR_DISTANCE_STEP_IMPULSES 					1826 + SHORT_DISTANCE_STEP_IMPULSES
+#define STEP_IMPULSES_ACCEPTABLE_ERROR				100
+#define STEP_IMPULSES_DISTANCE_INITIAL				EMERGENCY_STEP_IMPULSES_TO_LIMIT - STEP_IMPULSES_ACCEPTABLE_ERROR
+#define SHORT_DISTANCE_STEP_IMPULSES		 		0	// 0
+#define FAR_DISTANCE_STEP_IMPULSES 					1826
 #define CONSTANT_SPEED_STEP_PER_MS					1.325 * FRONTS_PER_STEP
 #define RASTER_SUPPLY_SPEED_STEP_PER_MS				1.985 * FRONTS_PER_STEP
 #define MIN_SPEED_STEP_PER_MS_ALL_MODES 			1.569 * FRONTS_PER_STEP
@@ -109,7 +109,7 @@
 void device_init(void)
 {
 	device_current_state = DEVICE_STARTS;						// выставляем состояние устройства: устройство стартует
-	input_pins_init();												// инициализируем сигналы (указываем пины и порты, инициализируем единый массив сигналов)
+	input_pins_init();											// инициализируем сигналы (указываем пины и порты, инициализируем единый массив сигналов)
 	output_signals_state_init(LOGIC_LEVEL_HIGH);				// выставляем состояние выходных сигналов
 	input_signals_state_update();								// считываем состояние входных сигналов
 	device_modules_init();										// инициализируем аппаратные модули (кнопки, датчики, мотор, интерфейс А1, DIP-переключатели)
@@ -118,14 +118,10 @@ void device_init(void)
 	buckybreak_laser_disable();									// выключаем сигнал buckybreak и лазер
 	dip_switch_state_update();									// проверка направления и скорости движения
 	bucky_ready_dsable();
-	//enable_pin_set();											// навсегда выставляем "1" на входе ШД "Enable"
 	error_code = NO_ERROR;										// выставляем отсутствие ошибки
 	signals_check_timer_interrupts_start();						// запускаем таймер считывания состояний сигналов
 }
 
-/*
- *
- */
 void enable_pin_set(void)
 {
 	if (ENABLE_PIN_LOGIC_LEVEL_INVERTED)
@@ -174,7 +170,7 @@ void input_pins_init(void)
 	pushbutton_buckybrake.button_signal.signal_pin.pin_number = PUSHBUTTON_BUCKYBRAKE_Pin;				// пин кнопки тормоза кассетоприёмника
 
 	motor_instance_1.limit_switch.limit_switch_IN_signal.signal_pin.GPIO_port_pointer = GPIOA;
-	motor_instance_1.limit_switch.limit_switch_IN_signal.signal_pin.pin_number = GRID_END_POINT_Pin;					// пин концевика
+	motor_instance_1.limit_switch.limit_switch_IN_signal.signal_pin.pin_number = GRID_END_POINT_Pin;	// пин концевика
 	motor_instance_1.motor_signals.STEP_OUT_signal.signal_pin.GPIO_port_pointer = GPIOB;
 	motor_instance_1.motor_signals.STEP_OUT_signal.signal_pin.pin_number = STEP_Pin;
 	motor_instance_1.motor_signals.DIR_OUT_signal.signal_pin.GPIO_port_pointer = GPIOB;
@@ -215,6 +211,8 @@ void device_modules_init(void)
 	motor_instance_1.emergency_step_impulses_to_limit = EMERGENCY_STEP_IMPULSES_TO_LIMIT;
 	motor_instance_1.DIR_pin_logic_level_inverted = DIR_PIN_LOGIC_LEVEL_INVERTED;
 	motor_instance_1.motor_timer_ticks_per_ms = MOTOR_TIMER_TICKS_PER_MS;
+
+	motor_instance_1.step_impulses_acceptable_error = STEP_IMPULSES_ACCEPTABLE_ERROR;
 	motor_instance_1.step_impulses_distance_from_limit_switch = STEP_IMPULSES_DISTANCE_INITIAL;
 	motor_instance_1.limit_emergency_counter = 0;
 	motor_instance_1.motor_movement_direction = MOVE_TO_COORD_END;
@@ -378,9 +376,7 @@ void device_error_check(MotorObject_StructTypeDef* motor_object)
 	}
 	if (motor_object->limit_emergency_counter >= motor_object->emergency_step_impulses_to_limit)		// если прошагали критическое количество шагов в сторону концевика
 	{
-		motor_object->limit_emergency_counter = EMERGENCY_STEP_IMPULSES_TO_LIMIT;		// удерживаем аварийный счётчик шагов от дальнейшего увеличения
-		error_code = LIMIT_SWITCH_ERROR;								// выставляем ошибку концевика (решаем, что концевик неисправен)
-		device_current_state = DEVICE_ERROR;							// переключаем устройство в состояние ошибки
+
 	}
 }
 
@@ -469,7 +465,7 @@ void read_input_signals_and_set_device_state(void)
 	}
 	case DEVICE_ERROR:																// если возникла ошибка
 	{
-		motor_movement_purpose = MOTOR_PURPOSE_INSTANT_STOP;					// останавливаем мотор
+		motor_movement_purpose = MOTOR_PURPOSE_INSTANT_STOP;						// останавливаем мотор
 		device_error_handler();														// вызываем обработчик ошибок
 		break;
 	}
@@ -784,21 +780,14 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 	}
 	case MOTOR_PURPOSE_TAKE_INITIAL_POSITION:											// если назначение движения - вернуться в начальную позицию
 	{
-		//if(!(limit_switch_active(&motor_instance_1)))								// если концевик не активен
-		if ((motor_instance_1.step_impulses_distance_from_limit_switch + STEP_IMPULSES_ERROR_RATE) > 0)
+		if(!(limit_switch_active(&motor_instance_1)))
 		{
 			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);		// делаем шаг в направлении начального положения
-			if (limit_switch_active(&motor_instance_1))
-			{
-				//motor_instance_1.step_impulses_distance_from_limit_switch = 0;
-				motor_instance_1.limit_emergency_counter = 0;
-				motor_movement_complete();
-			}
 		}
 		else
 		{
-			device_current_state = DEVICE_ERROR;
-			error_code = LIMIT_SWITCH_ERROR;
+			motor_instance_1.limit_emergency_counter = 0;
+			motor_movement_complete();
 		}
 		break;
 	}

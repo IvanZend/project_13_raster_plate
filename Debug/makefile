@@ -1,5 +1,6 @@
 ################################################################################
 # Automatically-generated file. Do not edit!
+# Toolchain: GNU Tools for STM32 (9-2020-q2-update)
 ################################################################################
 
 -include ../makefile.init
@@ -28,6 +29,12 @@ endif
 
 -include ../makefile.defs
 
+OPTIONAL_TOOL_DEPS := \
+$(wildcard ../makefile.defs) \
+$(wildcard ../makefile.init) \
+$(wildcard ../makefile.targets) \
+
+
 BUILD_ARTIFACT_NAME := project_13_raster_plate
 BUILD_ARTIFACT_EXTENSION := elf
 BUILD_ARTIFACT_PREFIX := 
@@ -54,22 +61,22 @@ all: main-build
 main-build: project_13_raster_plate.elf secondary-outputs
 
 # Tool invocations
-project_13_raster_plate.elf: $(OBJS) $(USER_OBJS) C:\Users\IvanB.HEL-KONSTR7\Documents\GitHub\project_13_raster_plate\STM32G431KBTX_FLASH.ld
+project_13_raster_plate.elf: $(OBJS) $(USER_OBJS) C:\Users\IvanB.HEL-KONSTR7\Documents\GitHub\project_13_raster_plate\STM32G431KBTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	arm-none-eabi-gcc -o "project_13_raster_plate.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\IvanB.HEL-KONSTR7\Documents\GitHub\project_13_raster_plate\STM32G431KBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="project_13_raster_plate.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-default.size.stdout: $(EXECUTABLES)
+default.size.stdout: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	arm-none-eabi-size  $(EXECUTABLES)
 	@echo 'Finished building: $@'
 	@echo ' '
 
-project_13_raster_plate.list: $(EXECUTABLES)
+project_13_raster_plate.list: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	arm-none-eabi-objdump -h -S $(EXECUTABLES) > "project_13_raster_plate.list"
 	@echo 'Finished building: $@'
 	@echo ' '
 
-project_13_raster_plate.bin: $(EXECUTABLES)
+project_13_raster_plate.bin: $(EXECUTABLES) makefile objects.list $(OPTIONAL_TOOL_DEPS)
 	arm-none-eabi-objcopy  -O binary $(EXECUTABLES) "project_13_raster_plate.bin"
 	@echo 'Finished building: $@'
 	@echo ' '
