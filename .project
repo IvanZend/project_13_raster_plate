@@ -30,16 +30,4 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>Core/Inc/universal_extern_lib_1.h</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/reserve-library-for-stm32/universal_extern_lib_1.h</locationURI>
-		</link>
-		<link>
-			<name>Core/Src/universal_extern_lib_1.c</name>
-			<type>1</type>
-			<locationURI>PARENT-1-PROJECT_LOC/reserve-library-for-stm32/universal_extern_lib_1.c</locationURI>
-		</link>
-	</linkedResources>
 </projectDescription>
