@@ -32,7 +32,7 @@
 #define ENABLE_PIN_LOGIC_LEVEL_INVERTED				1
 #define LIMIT_SWITCH_LOGIC_LEVEL_INVERTED			1			// если концевик при размокнутом состоянии выдаёт "1", выставляем флаг инверсии
 #define RASTER_SUPPLY_DISTANCE_STEP_IMPULSES		1937		// расстояние от концевика, на которое растр выдвигается для подачи
-#define EMERGENCY_STEP_IMPULSES_TO_LIMIT			4000		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
+#define EMERGENCY_STEP_IMPULSES_TO_LIMIT			3500		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
 #define BUTTON_BOUNCE_FILTER_COUNTS					0			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
 #define BUTTON_LONG_PRESS_DURATION_SEC				1			// количество миллисекунд, после которого фиксируем долгое нажатие кнопки
 #define BUCKY_READY_DELAY_STEP_IMPULSES				3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
@@ -193,6 +193,7 @@ void input_pins_init(void)
  */
 void device_modules_init(void)
 {
+	limit_switch_enabled_once = 0;
 	motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;					// даём двигателю задание занять начальное положение
 	motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;							// выставляем флаг, что мотор находится в движении
 	exposition_movement_direction = EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION;	// задаём начальное направление циклического движения при экспозиции
@@ -260,7 +261,6 @@ void check_input_signals(void)
 {
 	input_signals_state_update();					// считываем состояние входов, обновляем их состояние в объекте устройства
 	buttons_state_update();							// обновляем состояние аппаратных модулей
-	device_error_check(&motor_instance_1);			// проверяем текущее состояние устройства на наличие ошибок
 	read_input_signals_and_set_device_state();		// изменяем состояние устройства в зависимости от входных сигналов
 }
 
@@ -361,26 +361,6 @@ void buttons_state_update(void)
 }
 
 /*
- * Проверка текущего состояния устройства на наличие ошибок
- */
-void device_error_check(MotorObject_StructTypeDef* motor_object)
-{
-	/*
-	 * если определён тип растра 120 и 180 одновременно
-	 */
-	if ((grid_sensor.GRID_120_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
-		(grid_sensor.GRID_180_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
-	{
-		error_code = GRID_TYPE_ERROR;									// выставляем флаг ошибки типа растра
-		device_current_state = DEVICE_STANDBY;							// переключаем устройство в режим ожидания
-	}
-	if (motor_object->limit_emergency_counter >= motor_object->emergency_step_impulses_to_limit)		// если прошагали критическое количество шагов в сторону концевика
-	{
-
-	}
-}
-
-/*
  * Обработчик ошибок
  */
 void device_error_handler(void)
@@ -411,7 +391,12 @@ void device_error_handler(void)
 	}
 	case LIMIT_SWITCH_ERROR:			// если ошибка концевика
 	{
-		break;							// остаёмся в этом состоянии до перезагрузки
+		if (motor_movement_purpose != MOTOR_PURPOSE_EMERGENCY_SUPPLY)
+		{
+			motor_instance_1.step_impulses_distance_from_limit_switch = 0;
+			motor_movement_purpose = MOTOR_PURPOSE_EMERGENCY_SUPPLY;
+		}
+		break;
 	}
 	case STANDBY_MOVEMENT_ERROR:		// если ошибка движения в режиме ожидания
 	{
@@ -451,21 +436,12 @@ void read_input_signals_and_set_device_state(void)
 	case DEVICE_STARTS:																// если устройство стартует
 	{
 		device_current_state = DEVICE_INITIAL_MOVEMENT;
-		if (limit_switch_active(&motor_instance_1))
-		{
-			motor_instance_1.step_impulses_distance_from_limit_switch = 0;
-			motor_movement_purpose = MOTOR_PURPOSE_INITIAL_MOVEMENT;			// назначение движения: возврат в начальное положение
-		}
-		else
-		{
-			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;
-		}
+		motor_movement_purpose = MOTOR_PURPOSE_INITIAL_MOVEMENT;
 		motor_movement_start(&motor_instance_1, &movement_profile_1_default);
 		break;
 	}
 	case DEVICE_ERROR:																// если возникла ошибка
 	{
-		motor_movement_purpose = MOTOR_PURPOSE_INSTANT_STOP;						// останавливаем мотор
 		device_error_handler();														// вызываем обработчик ошибок
 		break;
 	}
@@ -580,7 +556,7 @@ void set_grid_out_signal(void)
 	 * если растр не представлен
 	 */
 	if ((grid_sensor.GRID_120_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
-			(grid_sensor.GRID_180_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
+		(grid_sensor.GRID_180_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 	{
 		set_output_signal_state(GRID_120_OUT_PORT, GRID_120_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_120
 		set_output_signal_state(GRID_180_OUT_PORT, GRID_180_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_180
@@ -588,7 +564,8 @@ void set_grid_out_signal(void)
 	/*
 	* если тип растра 120
 	*/
-	if (grid_sensor.GRID_120_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH)
+	if ((grid_sensor.GRID_120_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
+		(grid_sensor.GRID_180_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW))
 	{
 		set_output_signal_state(GRID_120_OUT_PORT, GRID_120_OUT_PIN, LOGIC_LEVEL_HIGH);		// выставляем в "1" выходной сигнал GRID_120
 		set_output_signal_state(GRID_180_OUT_PORT, GRID_180_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_180
@@ -596,10 +573,19 @@ void set_grid_out_signal(void)
 	/*
 	* если тип растра 180
 	*/
-	if (grid_sensor.GRID_180_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH)
+	if ((grid_sensor.GRID_120_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW) && \
+		(grid_sensor.GRID_180_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
 	{
 		set_output_signal_state(GRID_120_OUT_PORT, GRID_120_OUT_PIN, LOGIC_LEVEL_LOW);		// выставляем в "0" выходной сигнал GRID_120
 		set_output_signal_state(GRID_180_OUT_PORT, GRID_180_OUT_PIN, LOGIC_LEVEL_HIGH);		// выставляем в "1" выходной сигнал GRID_180
+	}
+	if ((grid_sensor.GRID_120_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH) && \
+		(grid_sensor.GRID_180_DETECT_IN_signal.signal_logic_level == LOGIC_LEVEL_HIGH))
+	{
+		set_output_signal_state(GRID_120_OUT_PORT, GRID_120_OUT_PIN, LOGIC_LEVEL_HIGH);		// выставляем в "1" выходной сигнал GRID_120
+		set_output_signal_state(GRID_180_OUT_PORT, GRID_180_OUT_PIN, LOGIC_LEVEL_HIGH);		// выставляем в "1" выходной сигнал GRID_180
+		error_code = GRID_TYPE_ERROR;									// выставляем флаг ошибки типа растра
+		device_current_state = DEVICE_ERROR;							// переключаем устройство в режим ожидания
 	}
 }
 
@@ -664,7 +650,6 @@ void motor_movement_complete(void)
 	motor_movement_status = MOTOR_MOVEMENT_COMPLETED;					// выставляем флаг, что движение завершено
 }
 
-
 /*
  * Начинаем отсчёт шагов до выставления сигнала BUCKY_READY
  */
@@ -690,20 +675,29 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 {
 	switch (motor_movement_purpose)												// если назначение движения мотора
 	{
-	case MOTOR_PURPOSE_INSTANT_STOP:													// если назначение движения мотора - мгновенная остановка
-	{
-		motor_movement_complete();														// завершаем движение
-		break;
-	}
 	case MOTOR_PURPOSE_INITIAL_MOVEMENT:
 	{
-		if (motor_object->step_impulses_distance_from_limit_switch < FAR_DISTANCE_STEP_IMPULSES)				// если мы не дошли до крайнего положения
+		if (!limit_switch_enabled_once)
 		{
-			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_END);							// движемся от начальной точки (наружу)
+			if(!limit_switch_active(&motor_instance_1))
+			{
+				motor_check_counter_and_make_step_to_direction(&motor_instance_1, &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);
+			}
+			else
+			{
+				limit_switch_enabled_once = 1;
+			}
 		}
 		else
 		{
-			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;
+			if (motor_object->step_impulses_distance_from_limit_switch < FAR_DISTANCE_STEP_IMPULSES)
+			{
+				motor_check_counter_and_make_step_to_direction(&motor_instance_1, &movement_profile_1_default, MOVE_TO_COORD_END);
+			}
+			else
+			{
+				motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;
+			}
 		}
 		break;
 	}
@@ -782,7 +776,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 	{
 		if(!(limit_switch_active(&motor_instance_1)))
 		{
-			motor_check_counter_and_make_step_to_direction(&motor_instance_1,  &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);		// делаем шаг в направлении начального положения
+			motor_check_counter_and_make_step_to_direction(&motor_instance_1, &movement_profile_1_default, MOVE_TO_COORD_ORIGIN);		// делаем шаг в направлении начального положения
 		}
 		else
 		{
@@ -790,6 +784,14 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 			motor_movement_complete();
 		}
 		break;
+	}
+	case MOTOR_PURPOSE_EMERGENCY_SUPPLY:
+	{
+		set_output_signal_state(BUCKY_READY_OUT_PORT, BUCKY_READY_OUT_PIN, LOGIC_LEVEL_LOW);
+		if (motor_object->step_impulses_distance_from_limit_switch < (RASTER_SUPPLY_DISTANCE_STEP_IMPULSES + STEP_IMPULSES_ACCEPTABLE_ERROR))
+		{
+			motor_check_counter_and_make_step_to_direction(&motor_instance_1, &movement_profile_1_default, MOVE_TO_COORD_END);
+		}
 	}
 	}
 }

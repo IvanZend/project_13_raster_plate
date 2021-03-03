@@ -83,7 +83,7 @@ typedef enum
 	MOTOR_PURPOSE_GRID_EXTRACTION,
 	MOTOR_PURPOSE_EXPOSITION_TOMO_OFF,
 	MOTOR_PURPOSE_EXPOSITION_TOMO_ON,
-	MOTOR_PURPOSE_INSTANT_STOP
+	MOTOR_PURPOSE_EMERGENCY_SUPPLY
 
 } MotorMovementPurpose_EnumTypeDef;
 
@@ -166,6 +166,7 @@ typedef struct
 ********************************************************************************
 */
 
+_Bool limit_switch_enabled_once;
 DeviceState_EnumTypeDef device_current_state;
 ErrorCode_EnumTypeDef error_code;
 GridSensor_TypeDef grid_sensor;
@@ -206,7 +207,6 @@ void signals_check_timer_interrupt_handler(void);
 void buttons_state_update(void);
 void enable_pin_set(void);
 void enable_pin_clear(void);
-void device_error_check(MotorObject_StructTypeDef* motor_object);
 void device_error_handler(void);
 void read_input_signals_and_set_device_state(void);
 void set_grid_out_signal(void);
