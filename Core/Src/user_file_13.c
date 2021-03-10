@@ -32,7 +32,7 @@
 #define ENABLE_PIN_LOGIC_LEVEL_INVERTED				1
 #define LIMIT_SWITCH_LOGIC_LEVEL_INVERTED			1			// если концевик при размокнутом состоянии выдаёт "1", выставляем флаг инверсии
 #define RASTER_SUPPLY_DISTANCE_STEP_IMPULSES		1937		// расстояние от концевика, на которое растр выдвигается для подачи
-#define EMERGENCY_STEP_IMPULSES_TO_LIMIT			3500		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
+#define EMERGENCY_STEP_IMPULSES_TO_LIMIT			4000		// максимальное расстояние, которое ШД может проехать до концевика. После него выполняем аварийное торможение.
 #define BUTTON_BOUNCE_FILTER_COUNTS					0			// количество отсчетов, после которого решаем, что дребезг закончился и кнопка нажата
 #define BUTTON_LONG_PRESS_DURATION_SEC				1			// количество миллисекунд, после которого фиксируем долгое нажатие кнопки
 #define BUCKY_READY_DELAY_STEP_IMPULSES				3			// количество шагов, после которых растр разгоняется, и загорается сигнал BUCKY_READY
@@ -741,7 +741,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 		}
 		else
 		{
-			bucky_ready_dsable();								// иначе выключаем сигнал BUCKY_READY
+			bucky_ready_dsable();														// иначе выключаем сигнал BUCKY_READY
 			motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;				// выставляем назначение движения - двигаться в начальное положение
 		}
 		break;

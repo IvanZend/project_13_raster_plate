@@ -39,11 +39,11 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  17 .debug_line   0000fe97  00000000  00000000  00056260  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 18 .debug_str    000c6b9d  00000000  00000000  000660f7  2**0
+ 18 .debug_str    000c6ba9  00000000  00000000  000660f7  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 19 .comment      00000053  00000000  00000000  0012cc94  2**0
+ 19 .comment      00000053  00000000  00000000  0012cca0  2**0
                   CONTENTS, READONLY
- 20 .debug_frame  000047f0  00000000  00000000  0012cce8  2**2
+ 20 .debug_frame  000047f0  00000000  00000000  0012ccf4  2**2
                   CONTENTS, READONLY, DEBUGGING, OCTETS
 
 Disassembly of section .text:
@@ -2865,6 +2865,9 @@ void check_limit_switch_and_make_step(MotorObject_StructTypeDef* motor_object)
 
 08001650 <calculate_ticks_per_next_step>:
 
+/*
+ * Вычислить количество тиков до следующего шага
+ */
 void calculate_ticks_per_next_step(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile)
 {
  8001650:	b580      	push	{r7, lr}
@@ -2999,6 +3002,9 @@ void calculate_ticks_per_next_step(MotorObject_StructTypeDef* motor_object, Moto
 
 08001750 <movement_time_function>:
 
+/*
+ * Функция текущей скорости от времени, прошедшего с начала движения
+ */
 float movement_time_function(uint32_t ticks_value, MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile)
 {
  8001750:	b5b0      	push	{r4, r5, r7, lr}
@@ -3103,7 +3109,7 @@ float movement_time_function(uint32_t ticks_value, MotorObject_StructTypeDef* mo
 08001830 <limit_switch_active>:
 
 /*
- * опрашиваем и возрващаем состояние концевика
+ * Опрашиваем и возрващаем состояние концевика
  */
 _Bool limit_switch_active(MotorObject_StructTypeDef* motor_object)
 {
@@ -3180,7 +3186,7 @@ _Bool limit_switch_active(MotorObject_StructTypeDef* motor_object)
 08001884 <step_toggle>:
 
 /*
- * совершаем шаг
+ * Совершаем шаг
  */
 void step_toggle(MotorObject_StructTypeDef* motor_object)
 {
@@ -3238,6 +3244,9 @@ void step_toggle(MotorObject_StructTypeDef* motor_object)
 
 080018d8 <convert_ms_to_ticks>:
 
+/*
+ * Конвертируем миллисекунды в количество тиков
+ */
 uint32_t convert_ms_to_ticks(uint32_t seconds, uint32_t ticks_per_sec)
 {
  80018d8:	b480      	push	{r7}

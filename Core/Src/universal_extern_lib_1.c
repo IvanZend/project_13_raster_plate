@@ -106,7 +106,9 @@ void check_and_update_button_state(ButtonAttributes_StructTypeDef* button_to_che
 	}
 }
 
-
+/*
+ * Инициализация объекта мотора
+ */
 void motor_init(MotorObject_StructTypeDef* motor_object)
 {
 	motor_object->limit_switch.limit_switch_logic_inverted = LIMIT_SWTICH_LOGIC_INVERTED_DEFAULT;
@@ -127,7 +129,9 @@ void motor_init(MotorObject_StructTypeDef* motor_object)
 	motor_object->cyclic_movement_direction = MOVE_TO_COORD_END;
 }
 
-
+/*
+ * Инициализация профиля движения
+ */
 void movement_profile_init(MotorMovementProfile_StructTypeDef* movement_profile)
 {
 	movement_profile->acceleration_type = ACCELERATION_TYPE_DEFAULT;
@@ -312,6 +316,9 @@ void check_limit_switch_and_make_step(MotorObject_StructTypeDef* motor_object)
 	}
 }
 
+/*
+ * Вычислить количество тиков до следующего шага
+ */
 void calculate_ticks_per_next_step(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile)
 {
 	switch (movement_profile->acceleration_type)
@@ -350,6 +357,9 @@ void calculate_ticks_per_next_step(MotorObject_StructTypeDef* motor_object, Moto
 	}
 }
 
+/*
+ * Функция текущей скорости от времени, прошедшего с начала движения
+ */
 float movement_time_function(uint32_t ticks_value, MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile)
 {
 	float calculated_speed_step_per_ms = 0;
@@ -375,7 +385,7 @@ float movement_time_function(uint32_t ticks_value, MotorObject_StructTypeDef* mo
 }
 
 /*
- * опрашиваем и возрващаем состояние концевика
+ * Опрашиваем и возрващаем состояние концевика
  */
 _Bool limit_switch_active(MotorObject_StructTypeDef* motor_object)
 {
@@ -409,7 +419,7 @@ _Bool limit_switch_active(MotorObject_StructTypeDef* motor_object)
 }
 
 /*
- * совершаем шаг
+ * Совершаем шаг
  */
 void step_toggle(MotorObject_StructTypeDef* motor_object)
 {
@@ -430,6 +440,9 @@ void step_toggle(MotorObject_StructTypeDef* motor_object)
 	}
 }
 
+/*
+ * Конвертируем миллисекунды в количество тиков
+ */
 uint32_t convert_ms_to_ticks(uint32_t seconds, uint32_t ticks_per_sec)
 {
 	uint32_t ticks_per_time;
