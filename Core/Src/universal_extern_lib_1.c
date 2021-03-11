@@ -343,6 +343,7 @@ void calculate_ticks_per_next_step(MotorObject_StructTypeDef* motor_object, Moto
 			// иначе движемся с максимальной скоростью
 			else
 			{
+				bucky_ready_enable();
 				motor_object->ticks_before_next_step_counter = motor_object->motor_timer_ticks_per_ms/movement_profile->max_speed_step_per_ms;
 			}
 		}

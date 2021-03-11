@@ -151,7 +151,6 @@ typedef struct
 /*
  * DIP-переключатель
  */
-
 typedef struct
 {
 	InSignalAttributes_StructTypeDef DIP_SWITCH_1_IN_signal;
@@ -166,6 +165,8 @@ typedef struct
 ********************************************************************************
 */
 
+_Bool led_blink_enabled;
+uint32_t led_blink_counter;
 _Bool limit_switch_enabled_once;
 DeviceState_EnumTypeDef device_current_state;
 ErrorCode_EnumTypeDef error_code;
@@ -212,11 +213,14 @@ void read_input_signals_and_set_device_state(void);
 void set_grid_out_signal(void);
 void buckybreak_laser_disable(void);
 void bucky_ready_delay_set(void);
+void bucky_ready_enable(void);
 void bucky_ready_dsable(void);
 void motor_timer_interrupts_start(void);
 void motor_timer_interrupts_stop(void);
 void motor_movement_start(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile);
 void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, MotorMovementProfile_StructTypeDef* movement_profile);
 void motor_timer_interrupt_handler(void);
+void led_toggle(void);
+uint32_t ms_per_step(uint32_t ticks_per_sec);
 
 #endif /* INC_USER_FILE_11_H_ */

@@ -55,7 +55,7 @@
 #define ACCELERATION_DURATION_MS_MODE_11			52
 #define LINEAR_ACCELERATION_COEFFICIENT_INITIAL 	0
 #define QUADRATIC_ACCELERATION_COEFFICIENT_INITIAL 	0
-
+#define LED_TOGGLE_DURATION_MS						300
 
 /*
  * Определяем выходные пины, исходя из инициализации, созданной конфигуратором пинов
@@ -193,10 +193,12 @@ void input_pins_init(void)
  */
 void device_modules_init(void)
 {
+	led_blink_enabled = 0;
+	led_blink_counter = 0;
 	limit_switch_enabled_once = 0;
-	motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;					// даём двигателю задание занять начальное положение
-	motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;							// выставляем флаг, что мотор находится в движении
-	exposition_movement_direction = EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION;	// задаём начальное направление циклического движения при экспозиции
+	motor_movement_purpose = MOTOR_PURPOSE_TAKE_INITIAL_POSITION;						// даём двигателю задание занять начальное положение
+	motor_movement_status = MOTOR_MOVEMENT_IN_PROGRESS;									// выставляем флаг, что мотор находится в движении
+	exposition_movement_direction = EXPOSITION_MOVEMENT_FROM_INITIAL_POSITION;			// задаём начальное направление циклического движения при экспозиции
 	grid_supply_button.button_released_default_signal_level = LOGIC_LEVEL_LOW;			// выставляем флаг, что при отпущенной кнопке на пине "1"
 	grid_supply_button.button_pressing_duration_counter = 0;							// обнуляем счётчик продолжительности нажатия
 	grid_supply_button.button_bounce_filter_counts = BUTTON_BOUNCE_FILTER_COUNTS;
@@ -304,7 +306,6 @@ void dip_switch_state_update(void)
 /*
  * Опрашиваем состояние входных сигналов
  */
-
 void input_signals_state_update(void)
 {
 	check_input_signal_state(&grid_sensor.GRID_180_DETECT_IN_signal);
@@ -322,7 +323,6 @@ void input_signals_state_update(void)
 /*
  * Выставляем одно состояние на всех выходных пинах
  */
-
 void output_signals_state_init(SignalLogicLevel_EnumTypeDef signal_level_to_set)
 {
 	set_output_signal_state(MOTOR_ENABLE_OUT_PORT, MOTOR_ENABLE_OUT_PIN, signal_level_to_set);
@@ -349,6 +349,10 @@ void signals_check_timer_interrupts_start(void)
 void signals_check_timer_interrupt_handler(void)
 {
 	check_input_signals();
+	if (led_blink_enabled)
+	{
+		led_toggle();
+	}
 }
 
 /*
@@ -395,6 +399,7 @@ void device_error_handler(void)
 		{
 			motor_instance_1.step_impulses_distance_from_limit_switch = 0;
 			motor_movement_purpose = MOTOR_PURPOSE_EMERGENCY_SUPPLY;
+			led_blink_enabled = 1;
 		}
 		break;
 	}
@@ -665,6 +670,11 @@ void bucky_ready_delay_set(void)
 	}
 }
 
+void bucky_ready_enable(void)
+{
+	set_output_signal_state(BUCKY_READY_OUT_PORT, BUCKY_READY_OUT_PIN, LOGIC_LEVEL_HIGH);
+}
+
 void bucky_ready_dsable(void)
 {
 	bucky_ready_delay_counter = 0;
@@ -737,7 +747,7 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 		if (BUCKY_CALL_IN_signal.signal_logic_level == LOGIC_LEVEL_LOW)					// если сигнал BUCKY_CALL в "1"
 		{
 			cyclic_movement_step(&motor_instance_1, &movement_profile_2_exposition);														// делаем шаг
-			bucky_ready_delay_set();
+			//bucky_ready_delay_set();
 		}
 		else
 		{
@@ -792,6 +802,10 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 		{
 			motor_check_counter_and_make_step_to_direction(&motor_instance_1, &movement_profile_1_default, MOVE_TO_COORD_END);
 		}
+		else
+		{
+			motor_movement_complete();
+		}
 	}
 	}
 }
@@ -802,4 +816,20 @@ void motor_check_conditions_and_step(MotorObject_StructTypeDef* motor_object, Mo
 void motor_timer_interrupt_handler(void)
 {
 	motor_check_conditions_and_step(&motor_instance_1,  &movement_profile_2_exposition);
+}
+
+void led_toggle(void)
+{
+	led_blink_counter++;
+	if (led_blink_counter >= (LED_TOGGLE_DURATION_MS/ms_per_step(SIGNALS_CHECK_TIMER_TICKS_PER_SEC)))
+	{
+		led_blink_counter = 0;
+		HAL_GPIO_TogglePin(GRID_120_OUT_PORT, GRID_120_OUT_PIN);
+		HAL_GPIO_TogglePin(GRID_180_OUT_PORT, GRID_180_OUT_PIN);
+	}
+}
+
+uint32_t ms_per_step(uint32_t ticks_per_sec)
+{
+	return (1000/ticks_per_sec);
 }

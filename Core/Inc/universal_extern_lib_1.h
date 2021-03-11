@@ -173,5 +173,6 @@ _Bool limit_switch_active(MotorObject_StructTypeDef* motor_object);
 void check_input_signal_state(InSignalAttributes_StructTypeDef* signal_to_check);
 void step_toggle(MotorObject_StructTypeDef* motor_object);
 uint32_t convert_ms_to_ticks(uint32_t milliseconds, uint32_t ticks_per_ms);
+extern void bucky_ready_enable(void);
 
 #endif /* INC_UNIVERSAL_EXTERN_LIB_1_H_ */
